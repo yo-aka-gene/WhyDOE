@@ -3,7 +3,7 @@ import numpy as np
 from ._abstract import DesignMatrix, DOE
 
 
-class Yamanaka(DOE):
+class CLOO(DOE):
     def __init__(self):
         super().__init__()
 

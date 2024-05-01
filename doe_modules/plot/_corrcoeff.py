@@ -1,7 +1,7 @@
 import matplotlib.pyplot as plt
 import seaborn as sns
 
-from code.design import DOE
+from doe_modules.design import DOE
 
 
 def correlation_heatmap(

@@ -5,7 +5,7 @@ RUN pip install jupyterlab
 RUN jupyter serverextension enable --py jupyterlab
 
 WORKDIR $HOME
-RUN mkdir code jupyternb out
+RUN mkdir doe_modules jupyternb out
 
 EXPOSE 8888
 VOLUME ["/home/jovyan/code"]

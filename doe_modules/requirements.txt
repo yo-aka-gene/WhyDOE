@@ -179,4 +179,5 @@ xyzservices==2022.9.0
 zict==2.2.0
 zipp==3.11.0
 zstandard==0.19.0
-Could not fetch URL https://pypi.org/simple/pip/: There was a problem confirming the ssl certificate: HTTPSConnectionPool(host='pypi.org', port=443): Max retries exceeded with url: /simple/pip/ (Caused by SSLError(SSLZeroReturnError(6, 'TLS/SSL connection has been closed (EOF) (_ssl.c:997)'))) - skipping
+
+
