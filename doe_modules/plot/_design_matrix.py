@@ -7,7 +7,7 @@ from doe_modules.design import DOE
 def design_heatmap(
     design: DOE,
     n_factor: int,
-    annot_kws: dict = {"+": "+", "-": "-"},
+    annot_kws: dict = {"+": "+", "-": "$-$"},
     ax: plt.Axes = None,
     **kwargs
 ) -> None:
