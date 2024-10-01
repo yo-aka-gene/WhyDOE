@@ -11,10 +11,12 @@ class DesignMatrix:
             index = [f"#{i + 1}" for i in range(matrix.shape[0])],
             columns = [f"X{i + 1}" for i in range(matrix.shape[1])]
         )
+        self.shape = matrix.shape
+        self.values = matrix
 
 
-    def __call__(self, binarize: bool = False):
-        return ((self.matrix + 1) / 2).astype(bool) if binarize else self.matrix
+    def __call__(self, encode: bool = False):
+        return ((self.matrix + 1) / 2).astype(bool) if encode else self.matrix
 
 
     def interactions(self):
@@ -34,5 +36,17 @@ class DesignMatrix:
 
 
 class DOE:
-    def __init__(self):
+    def __init__(self, name: str):
         self.is_initialized = True
+        self.name = name
+
+
+    def get_exmatrix(
+        self, 
+        n_factor: int
+    ) -> DesignMatrix:
+        self.title = f"{self.name} design (n={n_factor})"
+
+
+    def __call__(self):
+        return self

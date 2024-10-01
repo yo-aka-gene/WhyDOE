@@ -8,20 +8,21 @@ def design_heatmap(
     design: DOE,
     n_factor: int,
     annot_kws: dict = {"+": "+", "-": "$-$"},
+    design_kws: dict = {},
     ax: plt.Axes = None,
+    title: str = None,
     **kwargs
 ) -> None:
     assert issubclass(design, DOE), \
         f"pass subclass of DOE, got {design}[{type(design)}]"
-    assert design().is_initialized, \
-        "pass DOE without initialization"
     assert isinstance(annot_kws, dict), \
         f"pass dict, got {annot_kws}[{type(annot_kws)}]"
     assert "+" in annot_kws and "-" in annot_kws, \
         f"pass dict that has '+' and '-' as keys, got {annot_kws}"
     _, ax = plt.subplots() if ax is None else (None, ax)
 
-    dsm = design().get_exmatrix(n_factor)(binarize=True)
+    design = design()
+    dsm = design.get_exmatrix(n_factor, **design_kws)(encode=True)
 
     sns.heatmap(
         dsm,
@@ -31,3 +32,5 @@ def design_heatmap(
         fmt="s", cbar=False, ax=ax,
         **kwargs
     )
+    title = design.title if title is None else title
+    ax.set(title=title)
