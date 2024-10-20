@@ -6,6 +6,7 @@ import pandas as pd
 
 from ._abstract import AbstractSimulator
 from doe_modules.design import DOE
+from doe_modules.preferences.cmap import sim1
 
 
 class Sim1(AbstractSimulator):
@@ -16,7 +17,7 @@ class Sim1(AbstractSimulator):
         kwarg_a: dict = dict(mean=2, sigma=.3),
         kwarg_b: dict = dict(mean=1, sigma=.5)
     ):
-        super().__init__(n_factor=9, random_state=random_state)
+        super().__init__(n_factor=9, random_state=random_state, cmap=sim1, name=r"Model $\Phi$")
         seeds = np.random.randint(0, 2**32, 3)
         np.random.seed(seeds[0])
         self.v = {
@@ -86,7 +87,7 @@ class Sim1(AbstractSimulator):
             "h": [1, 3, 5, 7, 7, 7, 5, 9, 9],
             "v": [3, 6, 6, 9, 6, 3, 3, 6, 3],
             "c": [
-               ".7" if self.x is not None and self.x[i + 1] == 0 else plt.cm.rainbow(i/9) for i in range(9)
+               ".7" if self.x is not None and self.x[i + 1] == 0 else self.cmap[i] for i in range(9)
             ],
             "alpha": [
                .2 if self.x is not None and self.x[i + 1] == 0 else 1 for i in range(9)
@@ -163,13 +164,17 @@ class Sim1(AbstractSimulator):
         random_state: int = 0,
         plot: bool = False,
         ax: np.ndarray = None,
-        titles: List[str] = None
+        titles: List[str] = None,
+        model_kwargs: dict = {},
+        **kwargs
     ):
         super().simulate(
             design=design, n_rep=n_rep,
             random_state=random_state,
             plot=plot, ax=ax, 
-            titles=titles
+            titles=titles,
+            model_kwargs=model_kwargs,
+            **kwargs
         )
 
 

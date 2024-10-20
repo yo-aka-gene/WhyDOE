@@ -1,4 +1,5 @@
 from . import cmap
+from . import pvalues
 from ._subplots import subplots
 
 
@@ -29,5 +30,6 @@ __all__ = [
     heatmap_pref,
     dsmat_pref,
     cmap,
+    pvalues,
     subplots,
 ]

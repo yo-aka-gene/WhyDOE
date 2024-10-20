@@ -10,11 +10,19 @@ from doe_modules.preferences import subplots
 
 
 class AbstractSimulator:
-    def __init__(self, n_factor: int, random_state: int = 0):
+    def __init__(
+        self, 
+        n_factor: int, 
+        random_state: int, 
+        cmap: list,
+        name: str
+    ):
         self.n_factor = n_factor
         self.is_executed = False
         self.design = None
         self.metadata = {}
+        self.cmap = cmap
+        self.name = name
         self.c, self.x, self.y = None, None, None
         np.random.seed(random_state)
 
@@ -43,15 +51,17 @@ class AbstractSimulator:
         random_state: int = 0,
         plot: bool = False,
         ax: np.ndarray = None,
-        titles: List[str] = None
+        titles: List[str] = None,
+        model_kwargs: dict = None,
+        **kwargs
     ):
         self.design = self.design if self.is_executed and design is None else design
         assert issubclass(type(self.design()), DOE), \
             f"Assign valid design, got {design}[{type(design)}]"
         self.design = self.design()
         self.is_executed = True
-        self.metadata = {"design": self.design.name, "n_rep": n_rep}
-        self.exmatrix = pd.concat([self.design.get_exmatrix(self.n_factor)()] * n_rep)
+        self.metadata = {"design": self.design.name, "n_rep": n_rep, "kwargs": kwargs}
+        self.exmatrix = pd.concat([self.design.get_exmatrix(self.n_factor, **kwargs)()] * n_rep)
         np.random.seed(random_state)
         seeds = np.random.randint(0, 2**32, len(self.exmatrix))
         exresult = []
@@ -65,7 +75,8 @@ class AbstractSimulator:
             exresult += [
                 self.run(
                     design_array=self.exmatrix.iloc[i, :], 
-                    random_state=s
+                    random_state=s,
+                    **model_kwargs
                 )
             ]
 
@@ -87,7 +98,7 @@ class AbstractSimulator:
             f"Simluation is not excecuted yet. Run self.simulate before calling self.scatterview"
         ax = subplots(self.n_factor)[1] if ax is None else ax
         factors = [f"X{i + 1}" for i in range(self.n_factor)]
-        n_trials = len(self.design.get_exmatrix(self.n_factor)())
+        n_trials = len(self.design.get_exmatrix(self.n_factor, **self.metadata['kwargs'])())
         
         for i, a in enumerate(ax.ravel()):
             factor = factors[i]
