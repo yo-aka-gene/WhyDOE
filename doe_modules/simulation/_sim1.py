@@ -6,6 +6,7 @@ import pandas as pd
 
 from ._abstract import AbstractSimulator
 from doe_modules.design import DOE
+from doe_modules.preferences import textcolor
 from doe_modules.preferences.cmap import sim1
 
 
@@ -124,7 +125,8 @@ class Sim1(AbstractSimulator):
         for i in range(len(datdot)):
             ax.text(
                 *datdot.iloc[i, 1:3], datdot.iloc[i, 0], ha="center", va="center",
-                size="medium" if self.x is None else 7
+                size="medium" if self.x is None else 7,
+                c=textcolor(datdot.c[i])
             )
 
         for n, a in self.a.items():

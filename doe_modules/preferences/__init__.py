@@ -1,6 +1,7 @@
 from . import cmap
 from . import pvalues
 from ._subplots import subplots
+from ._textcolor import rgba2gray, textcolor
 
 
 kwarg_savefig = {
@@ -31,5 +32,7 @@ __all__ = [
     dsmat_pref,
     cmap,
     pvalues,
+    rgba2gray,
     subplots,
+    textcolor,
 ]
