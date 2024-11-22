@@ -5,7 +5,7 @@ from ._abstract import DesignMatrix, DOE
 
 
 class FullFactorial(DOE):
-    def __init__(self, name: str = "Full factorial"):
+    def __init__(self, name: str = "FF"):
         super().__init__(name=name)
 
     def get_exmatrix(
