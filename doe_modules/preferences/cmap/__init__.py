@@ -13,10 +13,16 @@ circuit = [plt.cm.Spectral_r(i/9) for i in range(9)]
 
 sparse = [plt.cm.turbo((i + 1)/10) for i in range(9)]
 
+prototype = [plt.cm.nipy_spectral((i + 2)/7) for i in range(5)]
+
+test4 = [plt.cm.nipy_spectral((i + 2)/6) for i in range(4)]
+
 
 __all__ = [
     sim1,
     nonlinear,
     circuit,
     sparse,
+    prototype,
+    test4,
 ]
