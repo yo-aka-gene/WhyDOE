@@ -17,6 +17,7 @@ __all__ = [
     AbstractSimulator, 
     Sim1,
     Sim1Minus,
+    Sim1Plus,
     Circuit,
     CircuitMinus,
     CircuitPlus,
