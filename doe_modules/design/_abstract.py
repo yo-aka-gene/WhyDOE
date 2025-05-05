@@ -19,17 +19,19 @@ class DesignMatrix:
         return ((self.matrix + 1) / 2).astype(bool) if encode else self.matrix
 
 
-    def interactions(self):
+    def interactions(self, order: int = 2, full: bool = False):
         return pd.concat(
             [
-                self.matrix,
                 pd.DataFrame({
-                    f"{v[0]}{v[1]}": self.matrix.loc[
+                    "".join(v): self.matrix.loc[
                         :, v
                     ].prod(axis=1) for v in combinations(
-                        self.matrix.columns, 2
+                        self.matrix.columns, n
                     )
-                })
+                }) for n in np.arange(
+                    1, 
+                    self.matrix.columns.size + 1 if full else order + 1
+                )
             ],
             axis=1
         )
