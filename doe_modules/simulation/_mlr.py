@@ -14,19 +14,26 @@ class MLR:
     def __init__(
         self,
         simulation: AbstractSimulator,
-        interactions: bool = False
+        interactions: bool = False,
+        order: int = 2,
+        full_model: bool = False,
     ):
         assert issubclass(type(simulation), AbstractSimulator), \
             f"pass subclass of AbstractSimulator, got {simulation}[{type(simulation)}]"
         assert simulation.is_executed, \
             f"Simluation is not excecuted yet. Run simulation.simulate before passing it to MLR.__init__"
-        exog = DesignMatrix(simulation.exmatrix.values).interactions() if interactions else simulation.exmatrix
+        exog = DesignMatrix(simulation.exmatrix.values).interactions(order=order, full=full_model) if interactions else simulation.exmatrix
         self.result = ols(
             "y ~ " + " + ".join(exog.columns), 
             exog.assign(y=simulation.exresult)
         ).fit()
         self.cmap = simulation.cmap
-        self.metadata = simulation.metadata
+        self.metadata = {
+            **simulation.metadata,
+            "interactions": interactions,
+            "order": order,
+            "full_model": full_model
+        }
 
 
     def plot(
