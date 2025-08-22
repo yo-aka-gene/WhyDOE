@@ -1,5 +1,7 @@
 ### d_optimization.R ###
 
+options(warn = -1)
+
 packages <- c("optparse", "arrow", "AlgDesign")
 
 for (pkg in packages) {
@@ -26,7 +28,7 @@ optslist <- list(
 parser <- OptionParser(option_list = optslist)
 opts <- parse_args(parser)
 
-arr <- read_feather(paste0(opts$tempdir, "/arr.feather"))
+arr <- read_feather(paste0(opts$tempdir, "/arr.feather"), mmap = FALSE)
 candidate <- read_feather(paste0(opts$tempdir, "/candidate.feather"))
 n_add <- opts$add
 
@@ -42,3 +44,5 @@ write_feather(
   opt$design,
   paste0(opts$tempdir, "/opt.feather")
 )
+
+options(warn = 0)

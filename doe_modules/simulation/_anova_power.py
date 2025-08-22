@@ -73,10 +73,7 @@ def ff_anova_power(
         index=exmatrix.columns
     )
 
-    if interaction_exists:
-        order = mlr.metadata["order"]
-        full_model = mlr.metadata["full_model"]
-
+    if interaction_exists and mlr.metadata["order"] >= 2:
         interaction_names = ["".join(xij) for xij in combinations(exmatrix.columns, 2)]
 
         signs = [(1, 1), (1, -1), (-1, 1), (-1, -1)]

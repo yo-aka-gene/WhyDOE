@@ -65,7 +65,7 @@ class Test4(AbstractSimulator):
         x4 = f(c[4] * (self.v[4] + self.b[14] * x1 + self.b[24] * x2 + self.b[34] * x3 + e[4]))
         self.c = c
         self.x = {i+1: xi for i, xi in enumerate([x1, x2, x3, x4])}
-        self.y = sum([self.a[i + 1] * self.x[i + 1] for i in range(self.n_factor)]) + e[0]
+        self.y = f(sum([self.a[i + 1] * self.x[i + 1] for i in range(self.n_factor)]) + e[0])
         return self.y
     
 

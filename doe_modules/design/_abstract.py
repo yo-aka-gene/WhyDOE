@@ -19,7 +19,7 @@ class DesignMatrix:
         return ((self.matrix + 1) / 2).astype(bool) if encode else self.matrix
 
 
-    def interactions(self, order: int = 2, full: bool = False):
+    def interactions(self, order: int = 2):
         return pd.concat(
             [
                 pd.DataFrame({
@@ -30,7 +30,7 @@ class DesignMatrix:
                     )
                 }) for n in np.arange(
                     1, 
-                    self.matrix.columns.size + 1 if full else order + 1
+                    self.matrix.columns.size + 1 if order == np.inf else order + 1
                 )
             ],
             axis=1

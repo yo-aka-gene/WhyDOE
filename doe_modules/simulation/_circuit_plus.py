@@ -69,7 +69,7 @@ class CircuitPlus(AbstractSimulator):
         x9 = f(c[9] * (self.v[9] + self.b[89] * x8 + e[9]))
         self.c = c
         self.x = {i+1: xi for i, xi in enumerate([x1, x2, x3, x4, x5, x6, x7, x8, x9])}
-        self.y = self.a[1] * x1 - (self.a[2] * x2) + self.a[7] * x7 + self.a[8] * x8 + e[0]
+        self.y = f(self.a[1] * x1 - (self.a[2] * x2) + self.a[7] * x7 + self.a[8] * x8 + e[0])
         return self.y
     
 

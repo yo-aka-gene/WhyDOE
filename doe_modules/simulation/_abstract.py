@@ -60,7 +60,12 @@ class AbstractSimulator:
             f"Assign valid design, got {design}[{type(design)}]"
         self.design = self.design()
         self.is_executed = True
-        self.metadata = {"design": self.design.name, "n_rep": n_rep, "kwargs": kwargs}
+        self.metadata = {
+            "design": self.design.name, 
+            "n_rep": n_rep,
+            "factor_list": self.design.get_exmatrix(self.n_factor, **kwargs)().columns.tolist(),
+            "kwargs": kwargs
+        }
         self.exmatrix = pd.concat([self.design.get_exmatrix(self.n_factor, **kwargs)()] * n_rep)
         np.random.seed(random_state)
         seeds = np.random.randint(0, 2**32, len(self.exmatrix))
@@ -68,6 +73,7 @@ class AbstractSimulator:
         titles = [
             f"#{i + 1}" for i in range(len(self.exmatrix))
         ] if titles is None else titles
+
         if plot:
             ax = subplots(len(seeds))[1] if ax is None else ax
         

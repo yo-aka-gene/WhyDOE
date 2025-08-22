@@ -16,7 +16,7 @@ def algdesign_wrapper(arr: np.ndarray, candidate: np.ndarray, n_add: int) -> np.
     pl.from_numpy(candidate).write_ipc(f"{tempdir.name}/candidate.feather")
     cmd = f"Rscript {os.path.dirname(__file__)}/d_optimization.R -t {tempdir.name} -a {n_add}"
     subprocess.call(cmd.split())
-    ret = pl.read_ipc(f"{tempdir.name}/opt.feather").to_numpy()
+    ret = pl.read_ipc(f"{tempdir.name}/opt.feather", memory_map=False).to_numpy()
     tempdir.cleanup()
     return ret
 

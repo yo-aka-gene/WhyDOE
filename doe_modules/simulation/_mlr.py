@@ -1,3 +1,5 @@
+from itertools import combinations
+
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
@@ -16,13 +18,12 @@ class MLR:
         simulation: AbstractSimulator,
         interactions: bool = False,
         order: int = 2,
-        full_model: bool = False,
     ):
         assert issubclass(type(simulation), AbstractSimulator), \
             f"pass subclass of AbstractSimulator, got {simulation}[{type(simulation)}]"
         assert simulation.is_executed, \
             f"Simluation is not excecuted yet. Run simulation.simulate before passing it to MLR.__init__"
-        exog = DesignMatrix(simulation.exmatrix.values).interactions(order=order, full=full_model) if interactions else simulation.exmatrix
+        exog = DesignMatrix(simulation.exmatrix.values).interactions(order=order) if interactions else simulation.exmatrix
         self.result = ols(
             "y ~ " + " + ".join(exog.columns), 
             exog.assign(y=simulation.exresult)
@@ -31,8 +32,7 @@ class MLR:
         self.metadata = {
             **simulation.metadata,
             "interactions": interactions,
-            "order": order,
-            "full_model": full_model
+            "order": order
         }
 
 
@@ -41,6 +41,8 @@ class MLR:
         ax: plt.Axes = None,
         cmap: list = None,
         show_const: bool = False,
+        show_interactions: bool = True,
+        order: int = np.inf,
         const_color: tuple = plt.cm.gray(.7),
         xscales: np.ndarray = np.array([1.3, 1.8]),
         anova: bool = False,
@@ -55,11 +57,27 @@ class MLR:
             regex=regex
         )
         
+        displayed_factors = ["Intercept"] + self.metadata["factor_list"] if show_const else self.metadata["factor_list"].copy()
+        show_interactions = show_interactions and self.metadata["interactions"]
+        order = min(order, self.metadata["order"], len(self.metadata["factor_list"]))
+        
+        if show_interactions and order >= 2:
+            for i in np.arange(2, order + 1):
+                displayed_factors += list(
+                    map(
+                        lambda tup: "".join(tup), 
+                        combinations(self.metadata["factor_list"], i)
+                    )
+                )
+        if regex is not None:
+            find_regex = lambda arr, key: arr[np.vectorize(lambda element: key in element)(arr)]
+            displayed_factors = find_regex(np.array(displayed_factors), regex)
+        
         df = pd.DataFrame(
             params, columns=["coef"]
         ).assign(
             p=pvals
-        ).reset_index()
+        ).loc[displayed_factors, :].reset_index()
 
         ax = plt.subplots()[-1] if ax is None else ax
         cmap = self.cmap if cmap is None else cmap
@@ -95,6 +113,7 @@ class MLR:
         show_const: bool = False,
         anova: bool = False,
         anova_type: int = 2,
+        fill_nan: bool = False,
         regex: str = None
     ) -> pd.Series:
         assert dtype in [str, int, float], \
@@ -103,6 +122,7 @@ class MLR:
             show_const=show_const,
             anova=anova,
             anova_type=anova_type,
+            fill_nan=fill_nan,
             regex=regex
         )
         ret = params.apply(
@@ -112,6 +132,7 @@ class MLR:
         ) * pvals.apply(
             lambda p: 2 if np.isnan(p) else 1
         )
+        
         return ret.apply(
             lambda i: ["N.S.", "Up", "N/A", "Down"][i]
         ) if dtype == str else ret.apply(
@@ -124,7 +145,8 @@ class MLR:
         show_const: bool = False,
         anova: bool = False,
         anova_type: int = 2,
-        regex: str = None
+        fill_nan: bool = False,
+        regex: str = None,
     ) -> (pd.Series, pd.Series):
         if anova:
             params = self.result.params.drop("Intercept")
@@ -140,6 +162,9 @@ class MLR:
         else:
             params = self.result.params
             pvals = self.result.pvalues
+        
+        if fill_nan:
+            pvals = pvals.fillna(1)
 
         if regex is not None:
             params = params.filter(regex=regex)
