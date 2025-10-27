@@ -4,6 +4,8 @@ from ._harmonic_mean import harmonic_mean
 from ._subplots import subplots
 from ._textcolor import rgba2gray, textcolor
 
+import numpy as np
+
 
 kwarg_savefig = {
     "facecolor": "white",
@@ -26,6 +28,17 @@ dsmat_pref = dict(
 )
 
 
+kwarg_bootstrap = dict(
+    statistic=np.mean, 
+    n_resamples=10000, 
+    confidence_level=0.95,
+    random_state=np.random.default_rng()
+)
+
+
+kwarg_err = dict(capsize=.25, errwidth=1, linewidth=1,)
+
+
 def order2_interaction_regex(key: int, id_min: int, id_max: int) -> str:
     regex = f"^X[{key}]$"
     regex += f"|^X{id_min}X[{id_min + 1}-{id_max}]$" if key == id_min \
@@ -38,6 +51,8 @@ __all__ = [
     outputdir,
     heatmap_pref,
     dsmat_pref,
+    kwarg_bootstrap,
+    kwarg_err,
     order2_interaction_regex,
     cmap,
     pvalues,

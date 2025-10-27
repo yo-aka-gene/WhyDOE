@@ -55,7 +55,7 @@ def plot_roc2(model, x, y, ax, cmap, label_dict, minimalist: bool = False):
     for (i, x_), y_, auc, label in zip(enumerate(roc.x), roc.y, roc.auc, label_dict):
         ax.plot(
             x_, y_, 
-            label=f"{label} (AUC:{auc.round(3)})", 
+            label=f"{label} (AUROC:{auc.round(3)})", 
             c=eval(f"plt.cm.{cmap}")(i/(len(roc.auc) - 1)) if isinstance(cmap, str) else cmap[i]
         )
     

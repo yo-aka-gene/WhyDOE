@@ -17,6 +17,8 @@ prototype = [plt.cm.nipy_spectral((i + 2)/7) for i in range(5)]
 
 test4 = [plt.cm.nipy_spectral((i + 2)/6) for i in range(4)]
 
+test9 = [plt.cm.nipy_spectral((i + 2)/11) for i in range(9)]
+
 
 __all__ = [
     sim1,
@@ -25,4 +27,5 @@ __all__ = [
     sparse,
     prototype,
     test4,
+    test9,
 ]
