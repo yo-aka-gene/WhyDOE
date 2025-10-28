@@ -30,7 +30,7 @@ def plot_pr(model, x, y, ax, cmap, label_dict):
         ax[i].plot(
             x_, y_, 
             label=f"{label} (AP:{ap.round(3)})", 
-            c=eval(f"plt.cm.{cmap}")(i/(len(roc.auc) - 1)) if isinstance(cmap, str) else cmap[i]
+            c=eval(f"plt.cm.{cmap}")(i/(len(pr.ap) - 1)) if isinstance(cmap, str) else cmap[i]
         )
         ax[i].plot([0, 1], [base, base], c="gray", label="baseline", zorder=1, alpha=0.5)
     
@@ -58,7 +58,7 @@ def plot_pr2(model, x, y, ax, cmap, label_dict, minimalist: bool = False):
         ax.plot(
             x_, y_, 
             label=f"{label} (AP:{ap.round(3)})", 
-            c=eval(f"plt.cm.{cmap}")(i/(len(roc.auc) - 1)) if isinstance(cmap, str) else cmap[i]
+            c=eval(f"plt.cm.{cmap}")(i/(len(pr.ap) - 1)) if isinstance(cmap, str) else cmap[i]
         )
         ax.plot([0, 1], [base, base], c="gray", linestyle=(0, (1, 2)), zorder=1, alpha=0.5)
     
