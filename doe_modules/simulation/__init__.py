@@ -14,6 +14,9 @@ from ._mlr import MLR
 from ._anova_power import anova_power
 from ._theoretical_effects import TheoreticalEffects
 
+from . import esm4_metrics
+from . import esm9_metrics
+
 
 __all__ = [
     AbstractSimulator, 
@@ -32,4 +35,6 @@ __all__ = [
     #ff_anova_power,
     anova_power,
     TheoreticalEffects,
+    esm4_metrics,
+    esm9_metrics,
 ]
