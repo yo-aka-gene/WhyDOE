@@ -300,7 +300,7 @@ def n_eff(arr):
 
 
 def n_effpos(arr):
-    return (arr[9:] == 1) & is_effective(arr)
+    return ((arr[9:] == 1) & is_effective(arr)).sum()
 
 
 def effective_edge_positivity(arr):
