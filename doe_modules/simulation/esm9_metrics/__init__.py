@@ -25,7 +25,17 @@ def edge_coverage(arr) -> float:
     return n_edges(arr) / full
 
 
-def n_eff(arr):
+def pathway_positivity(arr):
+    n_p = np.abs(arr)[:9].sum()
+    return (arr[:9] == 1).sum() / n_p if n_p != 0 else 0
+
+
+def positive_pathway_coverage(arr):
+    return (arr[:9] == 1).sum() / 9
+
+
+
+def is_effective(arr):
     return np.array([
         (arr[9] != 0) & (
             (arr[1] != 0) or \
@@ -282,7 +292,19 @@ def n_eff(arr):
         (arr[42] != 0) & ((arr[7] != 0) or (arr[(44, 8),] != 0).all()),
         (arr[43] != 0) & (arr[8] != 0),
         (arr[44] != 0) & (arr[8] != 0),
-    ]).sum()
+    ])
+
+
+def n_eff(arr):
+    return is_effective(arr).sum()
+
+
+def n_effpos(arr):
+    return (arr[9:] == 1) & is_effective(arr)
+
+
+def effective_edge_positivity(arr):
+    return n_effpos(arr) / n_eff(arr) if n_eff(arr) != 0 else 0
 
 
 def positive_edge_loading(arr):
@@ -679,6 +701,12 @@ def synergetic_edge_loading(arr):
 
 def max_positive_edge_density(arr):
     return positive_edge_loading(arr).max() / n_eff(arr) if n_eff(arr) != 0 else 0
+
+
+def mean_positive_edge_density(arr):
+    n_factor = arr[:9].size
+    theoretical = n_factor * (n_factor + 1) * (n_factor - 1) / 6
+    return positive_edge_loading(arr).sum() / theoretical if theoretical != 0 else 0
 
 
 def max_synergetic_edge_density(arr):
