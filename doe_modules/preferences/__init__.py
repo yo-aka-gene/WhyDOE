@@ -52,6 +52,14 @@ def f2s(z: float, digit: int = 3) -> str:
     return s if subzero_digit == digit else s + "".join(["0" for _ in range(digit - subzero_digit)])
 
 
+def fmt_suffix(suffix: str) -> str:
+    if (suffix == "") or (suffix[0] == "_"):
+        return suffix
+    else:
+        return "_" + suffix
+
+
+
 __all__ = [
     kwarg_savefig,
     outputdir,
@@ -61,6 +69,7 @@ __all__ = [
     kwarg_err,
     order2_interaction_regex,
     f2s,
+    fmt_suffix,
     cmap,
     pvalues,
     harmonic_mean,
