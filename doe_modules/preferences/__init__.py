@@ -36,7 +36,7 @@ kwarg_bootstrap = dict(
 )
 
 
-kwarg_err = dict(capsize=.25, errwidth=1, linewidth=1,)
+kwarg_err = dict(capsize=.25, err_kws={'linewidth': 1}, linewidth=1,)
 
 
 def order2_interaction_regex(key: int, id_min: int, id_max: int) -> str:
@@ -44,6 +44,12 @@ def order2_interaction_regex(key: int, id_min: int, id_max: int) -> str:
     regex += f"|^X{id_min}X[{id_min + 1}-{id_max}]$" if key == id_min \
         else f"|^X[{id_min}-{key - 1}]X{key}$|^X{key}X[{id_min}-{id_max}]$"
     return regex
+
+
+def f2s(z: float, digit: int = 3) -> str:
+    s = str(round(z, digit))
+    subzero_digit = len(s.split(".")[-1])
+    return s if subzero_digit == digit else s + "".join(["0" for _ in range(digit - subzero_digit)])
 
 
 __all__ = [
@@ -54,6 +60,7 @@ __all__ = [
     kwarg_bootstrap,
     kwarg_err,
     order2_interaction_regex,
+    f2s,
     cmap,
     pvalues,
     harmonic_mean,
