@@ -155,6 +155,7 @@ class TheoreticalEffects:
         
         sns.barplot(
             data=data, x="Coefficient", y="term", ax=ax,
+            hue="term", legend=show_legend,
             palette=cmap, edgecolor=cmap,
             alpha=0,
             n_boot=self.metadata["kwarg_bootstrap"]["n_resamples"],
@@ -185,5 +186,5 @@ class TheoreticalEffects:
         ax.vlines(0, *ylim, linewidth=.5, color=".7", linestyle="--")
         ax.set_ylim(ylim)
         
-        if not show_legend:
-            ax.legend().remove()
+        # if not show_legend:
+        #     ax.legend().remove()
