@@ -719,3 +719,48 @@ def cai(arr) -> float:
         sparse_pathway_coverage(arr),
         max_positive_edge_density(arr)
     )
+
+
+def pbsi(arr) -> float:
+    return np.mean([
+        positive_pathway_coverage(arr),
+        1 - max_positive_edge_density(arr),
+        1 - mean_positive_edge_density(arr)
+    ])
+
+
+feat_names_short = dict(
+    pathway_coverage=r"P%",
+    pathway_positivity=r"P$_{(+)}$/P",
+    pathway_negativity=r"P$_{(-)}$/P",
+    positive_pathway_coverage=r"P$_{(+)}$%",
+    negative_pathway_coverage=r"P$_{(-)}$%",
+    sparse_pathway_coverage=r"P$_{(0)}$%",
+    edge_coverage=r"R%",
+    edge_positivity=r"R$_{(+)}$/R",
+    edge_negativity=r"R$_{(-)}$/R",
+    positive_edge_coverage=r"R$_{(+)}$%",
+    negative_edge_coverage=r"R$_{(-)}$%",
+    sparse_edge_coverage=r"R$_{(0)}$%",
+    edge_effectivity=r"R$^*$/R",
+    effective_edge_positivity=r"R$^*_{(+)}$/R$^*$",
+    effective_edge_negativity=r"R$^*_{(-)}$/R$^*$",
+    max_edge_density=r"MaxRW/R$^*$",
+    mean_edge_density=r"RW%",
+    max_positive_edge_density=r"MaxRW$_{(+)}$/R$^*$",
+    mean_positive_edge_density=r"RW$_{(+)}$%",
+    max_synergetic_edge_density=r"MaxRW$_&$/R$^*$",
+    mean_synergetic_edge_density=r"RW$_&$%",
+    max_factor_density=r"MaxFW/n",
+    mean_factor_density=r"FW%",
+    max_positive_factor_density=r"MaxFW$_{(+)}$/n",
+    mean_positive_factor_density=r"FW$_{(+)}$%",
+    max_synergetic_factor_density=r"MaxFW$_&$/n",
+    mean_synergetic_factor_density=r"FW$_&$%",
+    max_cascade_length_ratio=r"MaxCL/n",
+    mean_cascade_length_ratio=r"CL%",
+    max_positive_cascade_length_ratio=r"MaxCL$_{(+)}$/n",
+    mean_positive_cascade_length_ratio=r"CL$_{(+)}$%",
+    max_synergetic_cascade_length_ratio=r"MaxCL$_&$/n",
+    mean_synergetic_cascade_length_ratio=r"CL$_&$%"
+)

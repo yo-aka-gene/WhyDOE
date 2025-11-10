@@ -69,7 +69,7 @@ def sparse_edge_coverage(arr):
     return (arr[4:] == 0).sum() / arr[4:].size
 
 
-def n_eff(arr): 
+def is_effective(arr):
     return np.array([
         (arr[4] != 0) & ((arr[1] != 0) or (arr[(2, 7),] != 0).all() or (arr[(3, 8),] != 0).all() or (arr[(3, 7, 9),] != 0).all()),
         (arr[5] != 0) & ((arr[2] != 0) or (arr[(3, 9),] != 0).all()),
@@ -77,7 +77,11 @@ def n_eff(arr):
         (arr[7] != 0) & ((arr[2] != 0) or (arr[(3, 9),] != 0).all()),
         (arr[8] != 0) & (arr[3] != 0),
         (arr[9] != 0) & (arr[3] != 0),
-    ]).sum()
+    ])
+
+
+def n_eff(arr): 
+    return is_effective(arr).sum()
 
 
 def edge_effectivity(arr):
