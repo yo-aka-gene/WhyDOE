@@ -129,6 +129,8 @@ def bio_multicomp(
         y=["all factors" if i == 0 else f"X{i} KD" for i in range(nrows)] * simulation.metadata['n_rep'], 
         x=simulation.exresult, capsize=.3, errwidth=1, 
         palette=([const_color] + cmap) * simulation.metadata['n_rep'], 
+        hue=["all factors" if i == 0 else f"X{i} KD" for i in range(nrows)] * simulation.metadata['n_rep'], 
+        legend=False,
         alpha=.4, edgecolor=".2", label=bar_label,
         errorbar=errorbar, ax=ax
     )
@@ -136,6 +138,8 @@ def bio_multicomp(
     sns.scatterplot(
         y=["all factors" if i == 0 else f"X{i} KD" for i in range(nrows)] * simulation.metadata['n_rep'], 
         x=simulation.exresult, s=15, color = ([const_color] + cmap) * simulation.metadata['n_rep'],
+        hue=["all factors" if i == 0 else f"X{i} KD" for i in range(nrows)] * simulation.metadata['n_rep'], 
+        legend=False,
         alpha=1, linewidth=.5, edgecolor=".2", ax=ax
     )
 
