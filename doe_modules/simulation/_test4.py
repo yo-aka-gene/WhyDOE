@@ -13,7 +13,7 @@ from doe_modules.preferences.cmap import test4
 class Test4(AbstractSimulator):
     def __init__(
         self, 
-        edge_assignsment: list,
+        edge_assignment: list,
         random_state: int = 0,
         model_id: int = "",
         kwarg_v: dict = dict(mean=1, sigma=.8),
@@ -36,7 +36,7 @@ class Test4(AbstractSimulator):
             i: sign * a for i, a, sign in zip(
                 np.arange(1, self.n_factor + 1).astype(int),
                 np.random.lognormal(**kwarg_a, size=self.n_factor),
-                edge_assignsment[:self.n_factor]
+                edge_assignment[:self.n_factor]
             )
         }
         np.random.seed(seeds[2])
@@ -44,7 +44,7 @@ class Test4(AbstractSimulator):
             i: sign * b for i, b, sign in zip(
                 [12, 13, 14, 23, 24, 34],
                 np.random.lognormal(**kwarg_b, size=6),
-                edge_assignsment[self.n_factor:]
+                edge_assignment[self.n_factor:]
             )
         }
 

@@ -14,7 +14,7 @@ from doe_modules.preferences.cmap import test9
 class Test9(AbstractSimulator):
     def __init__(
         self, 
-        edge_assignsment: list,
+        edge_assignment: list,
         random_state: int = 0,
         model_id: int = "",
         kwarg_v: dict = dict(mean=1, sigma=.8),
@@ -37,7 +37,7 @@ class Test9(AbstractSimulator):
             i: sign * a for i, a, sign in zip(
                 np.arange(1, self.n_factor + 1).astype(int),
                 np.random.lognormal(**kwarg_a, size=self.n_factor),
-                edge_assignsment[:self.n_factor]
+                edge_assignment[:self.n_factor]
             )
         }
         np.random.seed(seeds[2])
@@ -54,7 +54,7 @@ class Test9(AbstractSimulator):
                     89
                 ],
                 np.random.lognormal(**kwarg_b, size=36),
-                edge_assignsment[self.n_factor:]
+                edge_assignment[self.n_factor:]
             )
         }
 
@@ -119,7 +119,8 @@ class Test9(AbstractSimulator):
             data=dat,
             x="x",
             y="y", 
-            c=test9, s=300, lw=0
+            c=test9, s=300, lw=0,
+            ax=ax
         )
 
         fmt_curve = lambda p1, p2, h: (np.linspace(p1[0], p2[0]), [curve(p1, p2, h, True)(v) for v in np.linspace(p1[0], p2[0])])
