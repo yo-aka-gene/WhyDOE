@@ -81,6 +81,7 @@ class MetaDataConfigurator:
         n_rep: int,
         designs: dict, 
         edge_assignment: np.ndarray,
+        model_id: str,
         random_state: int,
         seeds: np.ndarray,
         dunnett: bool
@@ -92,6 +93,7 @@ class MetaDataConfigurator:
         self.n_rep = n_rep
         self.designs = designs
         self.edge_assignment = edge_assignment
+        self.model_id = model_id
         self.random_state = random_state
         self.seeds = seeds
         self.dunnett = dunnett
@@ -106,6 +108,7 @@ class MetaDataConfigurator:
             "n_rep": self.n_rep,
             "designs": self.designs,
             "edge_assignment": self.edge_assignment,
+            "model_id": self.model_id,
             "random_state": self.random_state,
             "seeds": self.seeds,
             "dunnett": self.dunnett
@@ -124,6 +127,7 @@ class Benchmarker:
             "cloo": CLOO,
         }, 
         edge_assignment: np.ndarray = None,
+        model_id: str = "",
         random_state: int = 0,
         dunnett: bool = False,
         evaluation_metric = aptitude_score,
@@ -150,12 +154,13 @@ class Benchmarker:
             n_rep=n_rep,
             designs=designs,
             edge_assignment=edge_assignment,
+            model_id=simulator().name if edge_assignment is None else model_id,
             random_state=random_state,
             seeds=seeds,
             dunnett=dunnett
         )
         
-        caller = (lambda m: m()) if edge_assignment is None else (lambda m: m(edge_assignment=edge_assignment))
+        caller = (lambda m: m()) if edge_assignment is None else (lambda m: m(edge_assignment=edge_assignment, model_id=model_id))
         self.conditions = {
             k: list(
                 map(caller, [simulator] * self.noise.size * n_range.size * seeds.size)
@@ -278,9 +283,9 @@ class Benchmarker:
         )
         plt.subplots_adjust(wspace=wspace)
 
-        for t, sigma, a in zip(self.theoretical, self.noise.conf, ax.ravel()):
+        for t, sigma, a in zip(self.theoretical, self.noise.names, ax.ravel()):
             t.plot(ax=a, jitter_ratio=.04, xscales=np.array(xscales), size=size, **kwarg_err)
-            a.set(ylabel="", title="$\sigma=" + f"{sigma['kwarg_err']['scale']}" + "$")
+            a.set(ylabel="", title=sigma)
         
         return fig, ax
 
@@ -324,8 +329,12 @@ class Benchmarker:
                     title=self.noise.names[i], xlabel="N: Num. of replication", 
                     ylabel=self.metric.name
                 )
-                a.legend(loc="best", fontsize="x-small", ncol=2)
-
+                a.legend(
+                    loc="center left", 
+                    bbox_to_anchor=(1, .5),
+                    fontsize="small", 
+                    title=self.metadata.model_id
+                ) if i == self.noise.size - 1 else a.legend().remove()
         else:
             fig, ax = plt.subplots(figsize=(unit_x_length, unit_y_length))
             
@@ -338,7 +347,7 @@ class Benchmarker:
                     markeredgewidth=0, errorbar=("ci", 95), n_boot=1000, seed=self.metadata.random_state
                 )
             ax.set_ylim(-0.05, 1.05)
-            ax.set(title=self.metadata.simulator().name, xlabel="N: Num. of replication", ylabel=self.metric.name)
+            ax.set(title=self.metadata.model_id, xlabel="N: Num. of replication", ylabel=self.metric.name)
             ax.legend(loc="upper left", fontsize="x-small")
             ax.set_xticks(self.metadata.n_range.tolist())
             ax.set_yticks(np.linspace(0, 1, 6).tolist())
@@ -360,10 +369,12 @@ class Benchmarker:
                 item for item in items if (item != "pair") or self.metadata.dunnett
             ]
         ]
+
         fig, ax = plt.subplots(len(items), self.noise.size, figsize=(3 * self.noise.size, 2 * len(items)), sharex=True, sharey=True)
         plt.subplots_adjust(wspace=wspace, hspace=hspace)
         
         bbox_to_anchor = (1, .5) if self.metadata.dunnett else (1, 1)
+        center = np.floor(len(items) / 2).astype(int)
 
         for i, a in enumerate(ax.ravel()):
             sns.lineplot(
@@ -382,7 +393,11 @@ class Benchmarker:
                 a.set_ylabel(r"$1-\beta$" + f" ({items[i // self.noise.size]})")
 
             a.set_title(self.noise.names[i % self.noise.size]) if i // self.noise.size == 0 else a.set_xlabel("N: Num. of replication")
-            a.legend(loc="center left", bbox_to_anchor=bbox_to_anchor ) if i == 2 * self.noise.size - 1 else a.legend().remove()
+            a.legend(
+                loc="center left", 
+                bbox_to_anchor=bbox_to_anchor,
+                title=self.metadata.model_id
+            ) if i == (1 + center) * self.noise.size - 1 else a.legend().remove()
         
         return fig, ax
 
@@ -400,6 +415,7 @@ class BenchmarkingPipeline:
             "cloo": CLOO,
         }, 
         edge_assignment: np.ndarray = None,
+        model_id: str = "",
         random_state: int = 0,
         dunnett: bool = False,
         evaluation_metric = aptitude_score,
@@ -413,6 +429,7 @@ class BenchmarkingPipeline:
                 "n_rep": n_rep,
                 "designs": designs,
                 "edge_assignment": edge_assignment,
+                "model_id": model_id,
                 "random_state": random_state,
                 "dunnett": dunnett,
                 "evaluation_metric": evaluation_metric,
@@ -530,7 +547,7 @@ class DOptimizationBenchmarker(Benchmarker):
         }
         
         self.scores = pd.DataFrame({
-            "err": np.ravel([[v] * n_range.size * seeds.size for v in self.noise.arr]),
+            "err": np.ravel([[v] * n_add.size * seeds.size for v in self.noise.arr]),
             **{
                 f"{k}_nmax": [
                     len(m.exmatrix) for m in tqdm(
@@ -541,7 +558,7 @@ class DOptimizationBenchmarker(Benchmarker):
                     self.conditions.items(), total=len(self.conditions),
                     desc="calculating n_max values"
                 )
-            }
+            },
             **{
                 f"{k}_metric": [
                     self.metric.f(res, gt) for res, gt in tqdm(
@@ -570,43 +587,41 @@ class DOptimizationBenchmarker(Benchmarker):
             [
                 from_benchmarker.scores[from_benchmarker.scores.n == N].reset_index(drop=True),
                 pd.DataFrame({
-                    f"{k}_d": d_criterion(cond[self.metadata.n_rep * (N - 1)].exmatrix) * np.ones(
+                    f"{k}_d": d_criterion(sm.add_constant(np.vstack([des().get_exmatrix(n_factor=n_factor)().values] * N))) * np.ones(
                         self.noise.size * self.metadata.n_rep
-                    ) for k, cond in self.conditions.items()
+                    ) for k, des in self.metadata.designs.items()
                 }),
                 pd.DataFrame({
                     f"{k}_nmax": len(des().get_exmatrix(n_factor=n_factor)()) * N * np.ones(
                         self.noise.size * self.metadata.n_rep
-                    ).astype(int) for k, des in self.metadata.designs
+                    ).astype(int) for k, des in self.metadata.designs.items()
                 })
                 
             ],
             axis=1
         )
         
-        self.power = {
-            k: pd.concat(
-                [
-                    pd.concat(
-                        [
-                            anova_power(m),
-                            pd.DataFrame({
-                                "d": self.scores[f"{k}_d"].values[i] * np.ones(n_factor),
-                                "nmax": self.scores[f"{k}_nmax"].values[i] * np.ones(n_factor),
-                                "noise": ["$\sigma=" + f"{self.scores.err.values[i]}$"] * n_factor
-                            })
-                        ]
-                    ) for i, m in tqdm(
-                        enumerate(cond), total=n_iter,
-                        desc=f"{k}-based simulators"
-                    )
-                ],
-                axis=1
-            ) for k, cond in tqdm(
+        self.power = pd.concat([
+            pd.concat([
+                pd.concat(
+                    [
+                        anova_power(m),
+                        pd.DataFrame({
+                            "d": self.scores[f"{k}_d"].values[i] * np.ones(n_factor),
+                            "nmax": self.scores[f"{k}_nmax"].values[i] * np.ones(n_factor),
+                            "noise": [self.noise.names[i // (self.metadata.n_rep * n_add.size)]] * n_factor
+                        })
+                    ],
+                    axis=1
+                ) for i, m in tqdm(
+                    enumerate(cond), total=n_iter,
+                    desc=f"{k}-based simulators"
+                )
+            ]) for k, cond in tqdm(
                 self.conditions.items(), total=len(self.conditions), 
                 desc="Power analysis"
             )
-        }
+        ])
 
 
     def plot_groundtruth(
@@ -624,9 +639,9 @@ class DOptimizationBenchmarker(Benchmarker):
         )
         plt.subplots_adjust(wspace=wspace)
 
-        for t, sigma, a in zip(self.theoretical, self.noise.conf, ax.ravel()):
+        for t, sigma, a in zip(self.theoretical, self.noise.names, ax.ravel()):
             t.plot(ax=a, jitter_ratio=.04, xscales=np.array(xscales), size=size, **kwarg_err)
-            a.set(ylabel="", title="$\sigma=" + f"{sigma['kwarg_err']['scale']}" + "$")
+            a.set(ylabel="", title=sigma)
         
         return fig, ax
 
@@ -670,19 +685,24 @@ class DOptimizationBenchmarker(Benchmarker):
                 a.set_yticks(np.linspace(0, 1, 6).tolist())
                 a.set(
                     title=self.noise.names[i], xlabel="D-criterion values", 
-                    ylabel=f"{self.metric.name} ({self.metadata.simulator().name})"
+                    ylabel=self.metric.name
                 )
                 a.set_xscale("log")
-                a.legend(loc="upper right", fontsize="x-small")
+                a.legend(
+                    loc="center left", 
+                    bbox_to_anchor=(1, .5),
+                    fontsize="small",
+                    title=self.metadata.model_id
+                ) if i == self.noise.size - 1 else a.legend().remove()
                 
                 for k in items:
                     df_group = self.scores[self.scores.err == e].groupby(f"{k}_nmax").mean()
-                    for x, y, t in zip(
-                        list(df_group[f"{k}_d"]) + df[df.err == e].mean()[[f"{k2}_d" for k2 in self.metadata.designs]].tolist(),
-                        list(df_group[f"{k}_metric"] - 0.1) + (df[df.err == e].mean()[[f"{k2}_metric" for k2 in self.metadata.designs]] - 0.1).tolist(),
-                        list(df_group.index) + (df[df.err == e].mean()[[f"{k2}_nmax" for k2 in self.metadata.designs]] - 0.1).tolist()
-                    ):
-                        a.text(x, y, t, ha="center", va="center", size=8)
+                    xlist = list(df_group[f"{k}_d"]) + df[df.err == e].mean()[[f"{k2}_d" for k2 in self.metadata.designs]].tolist()
+                    ylist = list(df_group[f"{k}_metric"]) + (df[df.err == e].mean()[[f"{k2}_metric" for k2 in self.metadata.designs]]).tolist()
+                    tlist = list(df_group.index) + (df[df.err == e].mean().astype(int)[[f"{k2}_nmax" for k2 in self.metadata.designs]]).tolist()
+                    label_loc = -.1 if min(ylist) >= 0.2 else .1
+                    for x, y, t in zip(xlist, ylist, tlist):
+                        a.text(x, y + label_loc, t, ha="center", va="center", size=8)
 
         else:
             fig, ax = plt.subplots(figsize=(unit_x_length, unit_y_length))
@@ -704,19 +724,19 @@ class DOptimizationBenchmarker(Benchmarker):
                 )
             ax.set_ylim(-0.05, 1.05)
             ax.set_yticks(np.linspace(0, 1, 6).tolist())
-            ax.set(title=self.metadata.simulator().name, xlabel="D-criterion values", ylabel=self.metric.name)
+            ax.set(title=self.metadata.model_id, xlabel="D-criterion values", ylabel=self.metric.name)
             ax.set_xscale("log")
             ax.legend(loc="upper right", fontsize="x-small")
 
             for k in items:
                 df_group = self.scores[self.scores.err == noise].groupby(f"{k}_nmax").mean()
-                for x, y, t in zip(
-                    list(df_group[f"{k}_d"]) + df[df.err == noise].mean()[[f"{k2}_d" for k2 in self.metadata.designs]].tolist(),
-                    list(df_group[f"{k}_metric"] - 0.1) + (df[df.err == noise].mean()[[f"{k2}_metric" for k2 in self.metadata.designs]] - 0.1).tolist(),
-                    list(df_group.index) + (df[df.err == noise].mean()[[f"{k2}_nmax" for k2 in self.metadata.designs]] - 0.1).tolist()
-                ):
-                    a.text(x, y, t, ha="center", va="center", size=8)
-        
+                xlist = list(df_group[f"{k}_d"]) + df[df.err == noise].mean()[[f"{k2}_d" for k2 in self.metadata.designs]].tolist()
+                ylist = list(df_group[f"{k}_metric"]) + (df[df.err == noise].mean()[[f"{k2}_metric" for k2 in self.metadata.designs]]).tolist()
+                tlist = list(df_group.index) + (df[df.err == noise].mean().astype(int)[[f"{k2}_nmax" for k2 in self.metadata.designs]]).tolist()
+                label_loc = -.1 if min(ylist) >= 0.2 else .1
+                for x, y, t in zip(xlist, ylist, tlist):
+                    a.text(x, y + label_loc, t, ha="center", va="center", size=8)
+
         return fig, ax
 
     
@@ -740,19 +760,28 @@ class DOptimizationBenchmarker(Benchmarker):
                 data=self.power[
                     (self.power.noise == self.noise.names[i % self.noise.size]) & (self.power.model == labels[items[i // self.noise.size]])
                 ].reset_index(), 
-                x="n_max", y="power", hue="term",
+                x="nmax", y="power", hue="term",
                 ax=a, palette=self.cmap, marker="o",
                 markeredgewidth=0, n_boot=1000, seed=self.metadata.random_state,
             )
 
             a.set_ylim(-0.05, 1.05)
-            a.set_xticks(self.power.n_max.unique().tolist())
+            a.set_xticks(self.power.nmax.unique().tolist())
             a.set_yticks(np.linspace(0, 1, 6).tolist())
             if i % self.noise.size == 0:
-                a.set_ylabel(r"$1-\beta$" + f" ({labels[items[i // self.noise.size]]})")
+                a.set_ylabel(r"$1-\beta$")
+                
+            if i // self.noise.size == 0:
+                a.set_title(self.noise.names[i % self.noise.size])
 
-            a.set_title(self.noise.names[i % self.noise.size]) if i // self.noise.size == 0 else a.set_xlabel("N: Num. of replication")
-            a.legend(loc="center left", bbox_to_anchor=bbox_to_anchor ) if i == (1 + center) * self.noise.size - 1 else a.legend().remove()
+            a.set_xlabel(
+                "$n_{\max}$" + f" ({labels[items[i // self.noise.size]]} at $N=" + f"{self.metadata.N})$"
+            )
+            a.legend(
+                loc="center left",
+                bbox_to_anchor=bbox_to_anchor,
+                title=self.metadata.model_id
+            ) if i == (1 + center) * self.noise.size - 1 else a.legend().remove()
         
         return fig, ax
 
@@ -780,19 +809,17 @@ class DOptimizationBenchmarkingPipeline(BenchmarkingPipeline):
     def plot(
         self,
         func: list = [
-            "plot_groundtruth", "plot_benchmarking", "plot_power"
+            "plot_benchmarking", "plot_power"
         ],
         kwargs: dict = {
-            "plot_groundtruth": {}, 
             "plot_benchmarking": {}, 
             "plot_power": {}
         },
         savefig: bool = False,
         where: str = outputdir,
         titles: dict = {
-            "plot_groundtruth": "groundtrue_results", 
-            "plot_benchmarking": "benchmarks", 
-            "plot_power": "power"
+            "plot_benchmarking": "benchmarks_with_do", 
+            "plot_power": "power_doptim"
         },
         kwarg_save: dict = kwarg_savefig
     ):
