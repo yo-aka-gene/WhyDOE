@@ -23,7 +23,7 @@ class Test9(AbstractSimulator):
     ):
         super().__init__(
             n_factor=9, random_state=random_state, cmap=test9, 
-            name="ESM9" if model_id == "" else f"ESM9-#{model_id}"
+            name=["ESM9" if model_id == "" else model_id, f"ESM9-#{model_id}"][isinstance(model_id, int)]
         )
         seeds = np.random.randint(0, 2**32, 3)
         np.random.seed(seeds[0])

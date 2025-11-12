@@ -22,7 +22,7 @@ class Test4(AbstractSimulator):
     ):
         super().__init__(
             n_factor=4, random_state=random_state, cmap=test4, 
-            name="ESM4" if model_id == "" else f"ESM4-#{model_id}"
+            name=["ESM4" if model_id == "" else model_id, f"ESM4-#{model_id}"][isinstance(model_id, int)]
         )
         seeds = np.random.randint(0, 2**32, 3)
         np.random.seed(seeds[0])
