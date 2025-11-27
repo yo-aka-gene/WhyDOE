@@ -80,8 +80,8 @@ def lambda_i(simulator: AbstractSimulator, i: int) -> np.float:
     estimates noncentrality parameter $\lambda_i$
     """
     return norm2(
-        Qr(simulator, i) @ Xi(simulator, i) @ beta(Xi(simulator, i), Y(simulator))
-    ) / sigma2(simulator)
+        Qr(simulator, i) @ Xi(simulator, i) * beta(X(simulator), Y(simulator))[i + 1].item()
+    ).item() / sigma2(simulator).item()
 
 
 def Fi(simulator: AbstractSimulator, i: int) -> np.float:
