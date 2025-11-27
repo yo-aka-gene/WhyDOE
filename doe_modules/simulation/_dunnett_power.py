@@ -13,14 +13,14 @@ from ._anova_power import sigma2
 
 
 def mvtnorm_wrapper(
-    arr: np.ndarray, 
+    arr_m_t: np.ndarray, 
     baseline: float, 
     n_rep: int, 
     sigma: float, 
     alpha: float
 ):
     tempdir = TemporaryDirectory()
-    pl.from_numpy(arr).write_ipc(f"{tempdir.name}/arr.feather")
+    pl.from_numpy(arr_m_t).write_ipc(f"{tempdir.name}/arr.feather")
     cmd = f"Rscript {os.path.dirname(__file__)}/dunnett_power.R -t {tempdir.name} -m {baseline} -n {n_rep} -s {sigma} -a {alpha}"
     subprocess.call(cmd.split())
     # ret = pl.read_ipc(f"{tempdir.name}/power.feather", memory_map=False).to_numpy()
@@ -41,7 +41,7 @@ def dunnett_power(
     if dunnett_model.n_rep > 1:
         dunnett_model.summary()
         power_dict = mvtnorm_wrapper(
-            arr=(dunnett_model.coef - dunnett_model.baseline).y.values,
+            arr_m_t=dunnett_model.coef.y.values,
             baseline=dunnett_model.baseline.y,
             n_rep=dunnett_model.n_rep,
             sigma=np.sqrt(sigma2(dunnett_model.simulation).item()),
