@@ -36,7 +36,7 @@ def Qr(simulator: AbstractSimulator, i: int) -> np.ndarray:
     return np.eye(n_max) - P(Xr(simulator, i))
 
 
-def phi_i(simulator: AbstractSimulator, i: int) -> np.int:
+def phi_i(simulator: AbstractSimulator, i: int) -> int:
     return np.linalg.matrix_rank(Qr(simulator, i) @ Xi(simulator, i))
 
 
@@ -44,7 +44,7 @@ def SSi(simulator: AbstractSimulator, i: int) -> np.ndarray:
     return Y(simulator).T @ P(Qr(simulator, i) @ Xi(simulator, i)) @ Y(simulator)
 
 
-def phi_e(simulator: AbstractSimulator) -> np.int:
+def phi_e(simulator: AbstractSimulator) -> int:
     n_max = len(X(simulator))
     return n_max - np.linalg.matrix_rank(X(simulator))
 
@@ -61,7 +61,7 @@ def sigma2(simulator: AbstractSimulator) -> np.ndarray:
     return SSe(simulator) / phi_e(simulator)
 
 
-def norm2(vector: np.ndarray) -> np.float:
+def norm2(vector: np.ndarray) -> float:
     """
     function to return a norm squared
     """
@@ -75,7 +75,7 @@ def beta(X_des: np.ndarray, y_obs: np.ndarray) -> np.ndarray:
     return np.linalg.inv(X_des.T @ X_des) @ X_des.T @ y_obs
 
 
-def lambda_i(simulator: AbstractSimulator, i: int) -> np.float:
+def lambda_i(simulator: AbstractSimulator, i: int) -> float:
     """
     estimates noncentrality parameter $\lambda_i$
     """
@@ -84,7 +84,7 @@ def lambda_i(simulator: AbstractSimulator, i: int) -> np.float:
     ).item() / sigma2(simulator).item()
 
 
-def Fi(simulator: AbstractSimulator, i: int) -> np.float:
+def Fi(simulator: AbstractSimulator, i: int) -> float:
     return (
         SSi(simulator, i) / phi_i(simulator, i)
     ) / sigma2(simulator)
@@ -94,7 +94,7 @@ def power(
     simulator: AbstractSimulator, 
     i: int, 
     alpha: float = 0.05
-) -> np.float:
+) -> float:
     """
     calculate $1-\beta$ for the given factor
     """
