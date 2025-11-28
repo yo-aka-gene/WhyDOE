@@ -33,7 +33,9 @@ options(warn = -1)
 # candidate <- read_feather(paste0(opts$tempdir, "/candidate.feather"))
 # n_add <- opts$add
 
-d_optimize_core <- function(dsmatrix, candidate, n_add) {
+d_optimize_core <- function(dsmatrix, candidate, n_add, random_state) {
+    set.seed(random_state)
+    
     optimized <- optFederov(
         ~., 
         data = rbind(dsmatrix, candidate), 

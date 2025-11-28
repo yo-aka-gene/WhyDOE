@@ -43,7 +43,8 @@ def _initialize_r_func():
 def d_optimize(
     dsmatrix: DesignMatrix,
     n_add: int = 0,
-    n_total: int = None
+    n_total: int = None,
+    random_state: int = 0
 ) -> np.ndarray:
     if n_add == 0 and n_total is not None and isinstance(n_total, int):
         assert n_total >= dsmatrix.shape[0], \
@@ -60,18 +61,20 @@ def d_optimize(
         R_FUNC(
             dsmatrix=dsmatrix.values,
             candidate=FullFactorial().get_exmatrix(n_factor).values,
-            n_add=n_add
+            n_add=n_add,
+            random_state=random_state
         )
-    )
+        # NOTE: The following R call involves cross-language matrix conversion (Python/NumPy C-Major -> R Fortran-Major).
+        # R (AlgDesign) expects the standard (Trials x Factors) structure.
+        # However, due to the difference in internal memory ordering (Column-Major vs. Row-Major) during rpy2's conversion process,
+        # the matrix returned to Python is interpreted as TRANSPOSED (Factors x Trials).
+    ).T # FINAL CORRECTION: .T reverses the unintended transposition caused by the R-Python memory layout mismatch.
 
-
-# def matsort(arr: np.ndarray, axis: int) -> np.ndarray:
-#     return arr[np.argsort(arr.sum(axis=1)),:] if axis == 0 else arr[:,np.argsort(arr.sum(axis=0))]
-
-
-# def format_optarr(opt: np.ndarray, org: np.ndarray) -> np.ndarray:
-#     added = opt[len(org):]
-#     return np.vstack([org, matsort(matsort(added, axis=1), axis=0)])
+#T he final .T operation reverses the unintended transposition that occurs during the R-to-Python conversion. 
+# The underlying cause is the conflict between R's internal # Column-Major memory order (Fortran standard) and NumPy's C-Major (Row-Major) standard, 
+# which leads to the output being interpreted as transposed ($P \times N$) upon # reading back into Python. 
+# This is necessary because, while R correctly performs the optimization on a Trials $\times$ Factors structure, the data must be physically 
+# manipulated to satisfy both memory models.
 
 
 class DOptimization(DOE):
@@ -85,18 +88,16 @@ class DOptimization(DOE):
         n_factor: int,
         n_add: int = 0,
         n_total: int = None,
-        # sort: bool = True,
+        random_state: int = 0,
         **kwargs
     ) -> DesignMatrix:
-        opt = d_optimize(
+        optimized = d_optimize(
             self.base().get_exmatrix(n_factor), 
-            n_add=n_add, n_total=n_total
+            n_add=n_add, n_total=n_total,
+            random_state=random_state
         )
-        self.title = f"{self.name} design with {len(opt)} trials (n={n_factor})"
-        return DesignMatrix(
-            opt
-            # format_optarr(opt, self.base().get_exmatrix(n_factor).values) if sort else opt
-        )
+        self.title = f"{self.name} design with {len(optimized)} trials (n={n_factor})"
+        return DesignMatrix(optimized)
 
 
     def __call__(self):
