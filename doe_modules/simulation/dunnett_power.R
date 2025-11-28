@@ -1,5 +1,4 @@
 ### dunnett_power.R ###
-# print(commandArgs(trailingOnly = TRUE))
 
 options(warn = -1)
 
