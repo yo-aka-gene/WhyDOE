@@ -1,3 +1,6 @@
+from typing import Callable
+
+from joblib import Parallel, delayed
 import numpy as np
 import matplotlib.pyplot as plt
 import pandas as pd
@@ -7,7 +10,7 @@ import statsmodels.api as sm
 from tqdm.notebook import tqdm
 import warnings
 
-from doe_modules.design import CLOO, PlackettBurman, DOCLOO 
+from doe_modules.design import CLOO, PlackettBurman, DOCLOO, DOE
 from doe_modules.design import d_criterion
 from doe_modules.preferences import kwarg_err, outputdir, kwarg_savefig, fmt_suffix
 from ._mlr import MLR
@@ -115,6 +118,54 @@ class MetaDataConfigurator:
         }
 
 
+def simulate(
+    simulator: AbstractSimulator, 
+    design: DOE,
+    n_rep: int,
+    random_state: int,
+    model_kwargs: dict
+) -> AbstractSimulator:
+    simulator.simulate(
+        design=design,
+        n_rep=n_rep,
+        random_state=random_state,
+        model_kwargs=model_kwargs
+    )
+    return simulator
+
+
+def mlr_anova(
+    simulator: AbstractSimulator
+) -> pd.Series:
+    warnings.simplefilter('ignore')
+    return MLR(simulator).summary(anova=True, dtype=int)
+
+
+def theoretical_effect(
+    simulation: AbstractSimulator,
+    random_state: int,
+    model_kwargs: dict
+) -> TheoreticalEffects:
+    return TheoreticalEffects(
+        simulation=simulation,
+        random_state=random_state,
+        model_kwargs=model_kwargs
+    )
+
+
+def power_table_formatter(
+    power_func: Callable, 
+    simulator: AbstractSimulator,
+    idx: int,
+    noise_names: list,
+    n_rep: int,
+    n_range: int
+) -> pd.DataFrame:
+    return power_func(simulator).assign(
+        noise=pd.Series([noise_names[idx // (n_rep * n_range.size)] for _ in simulator.metadata["factor_list"]])
+    )
+
+
 class Benchmarker:
     def __init__(
         self,
@@ -132,7 +183,8 @@ class Benchmarker:
         dunnett: bool = False,
         evaluation_metric = aptitude_score,
         metric_name: str = "Aptitude scores",
-        suffix: str = ""
+        suffix: str = "",
+        n_jobs: int = -2
     ):
         self.noise = NoiseConfigurator(noise_arr=noise_arr)
         self.suffix = suffix
@@ -172,49 +224,38 @@ class Benchmarker:
             self.conditions.items(), total=len(self.conditions),
             desc="generating simulated results with experimental designs"
         ):
-            [
-                m.simulate(
+            self.conditions[k] = Parallel(n_jobs=n_jobs)(
+                delayed(simulate)(
+                    simulator=m,
                     design=designs[k],
                     n_rep=n_range[(i // n_rep) % n_range.size],
                     random_state=seeds[i % n_rep],
                     model_kwargs=self.noise.conf[i // (n_rep * n_range.size)]
-                ) for i, m in tqdm(
-                    enumerate(models), total=len(models),
-                    desc=f"{k}-based simulators"
-                )
-            ]
+                ) for i, m in enumerate(models)
+            )
         
-        self.theoretical = [
-            TheoreticalEffects(
+        self.theoretical = Parallel(n_jobs=n_jobs)(
+            delayed(theoretical_effect)(
                 simulation=simulator() if edge_assignment is None else simulator(
                     edge_assignment=edge_assignment
-                ), random_state=random_state, model_kwargs=nc
-            ) for nc in tqdm(
-                self.noise.conf, total=len(self.noise.conf),
-                desc="computing theoretical main effects"
-            )
-        ]
+                ),
+                random_state=random_state, 
+                model_kwargs=nc
+            ) for nc in self.noise.conf
+        )
 
-        self.ground_truth = [
-            self.theoretical[i].summary(dtype=int) for i in tqdm(
-                np.tile(
-                    np.arange(self.noise.size), 
-                    n_range.size * seeds.size
-                ).reshape(-1, self.noise.size).T.ravel(),
-                total=self.noise.size * n_range.size * seeds.size,
-                desc="generating ground truth labels for each condition"
-            )
-        ]
+        self.ground_truth = Parallel(n_jobs=n_jobs)(
+            delayed(lambda te: te.summary(dtype=int))(self.theoretical[i]) for i in np.tile(
+                np.arange(self.noise.size), n_range.size * seeds.size
+            ).reshape(-1, self.noise.size).T.ravel()
+        )
 
         warnings.simplefilter('ignore')
         
         self.results = {
-            k: [
-                MLR(m).summary(anova=True, dtype=int) for m in tqdm(
-                    cond, total=len(cond),
-                    desc=f"{k}-based simulators"
-                )
-            ] for k, cond in tqdm(
+            k: Parallel(n_jobs=n_jobs)(
+                delayed(mlr_anova)(m) for m in cond
+            ) for k, cond in tqdm(
                 self.conditions.items(), total=len(self.conditions),
                 desc="encoding simulated results with MLR/AVOVA"
             )
@@ -223,12 +264,11 @@ class Benchmarker:
         if dunnett and ("cloo" in self.conditions):
             self.results = {
                 **self.results,
-                "pair": [
-                    Dunnett(m).summary(dtype=int) for m in tqdm(
-                        self.conditions["cloo"], total=len(self.conditions["cloo"]),
-                        desc="encoding C+LOO-based simulated results with Dunnett's test"
-                    )
-                ]
+                "pair": Parallel(n_jobs=n_jobs)(
+                    delayed(
+                        lambda m: Dunnett(m).summary(dtype=int)
+                    )(m) for m in self.conditions["cloo"]
+                )
             }
         
         self.scores = pd.DataFrame({
@@ -255,14 +295,12 @@ class Benchmarker:
         
         power_summary = []
         for k in tqdm(self.results, total=len(self.results), desc="power analysis"):
-            power_summary += [
-                power(k)(m).assign(
-                    noise=pd.Series([self.noise.names[i // (n_rep * n_range.size)] for _ in m.metadata["factor_list"]])
-                ) for i, m in tqdm(
-                    enumerate(self.conditions[condition_key(k)]), total=len(self.conditions[condition_key(k)]),
-                    desc=f"{k}-based simulators" if k != "pair" else "dunnett's test"
-                )
-            ]
+            power_summary += Parallel(n_jobs=n_jobs)(
+                delayed(power_table_formatter)(
+                    power_func=power(k), simulator=m, idx=i,
+                    noise_names=self.noise.names, n_rep=n_rep, n_range=n_range
+                ) for i, m in enumerate(self.conditions[condition_key(k)])
+            )
         
         self.power = pd.concat(power_summary)
 
@@ -420,6 +458,7 @@ class BenchmarkingPipeline:
         dunnett: bool = False,
         evaluation_metric = aptitude_score,
         metric_name: str = "Aptitude scores",
+        n_jobs: int = -2
     ):
         config = {
             k: {
@@ -434,6 +473,7 @@ class BenchmarkingPipeline:
                 "dunnett": dunnett,
                 "evaluation_metric": evaluation_metric,
                 "metric_name": metric_name,
+                "n_jobs": n_jobs,
                 **d
             } for k, d in configuration.items()
         }
@@ -478,13 +518,55 @@ class BenchmarkingPipeline:
                 self.outputs[k][f] = (fig, ax)
 
 
+def do_simulate(
+    simulator: AbstractSimulator, 
+    design: DOE,
+    n_rep: int,
+    n_add: int,
+    random_state: int,
+    model_kwargs: dict
+) -> AbstractSimulator:
+    simulator.simulate(
+        design=design,
+        n_rep=n_rep,
+        n_add=n_add,
+        random_state=random_state,
+        model_kwargs=model_kwargs
+    )
+    return simulator
+                
+
+def power_pddf_formatter(
+    idx: int, 
+    simulator: AbstractSimulator,
+    key: str,
+    n_factor: int,
+    noise_names: list,
+    n_rep: int,
+    n_add: np.ndarray
+) -> pd.DataFrame:
+    return pd.concat(
+        [
+            anova_power(simulator),
+            pd.DataFrame({
+                "d": self.scores[f"{key}_d"].values[idx] * np.ones(n_factor),
+                "nmax": self.scores[f"{key}_nmax"].values[idx] * np.ones(n_factor),
+                "noise": [noise_names[idx // (n_rep * n_add.size)]] * n_factor
+            })
+        ],
+        axis=1
+    )
+
+
+
 class DOptimizationBenchmarker(Benchmarker):
     def __init__(
         self,
         from_benchmarker: Benchmarker,
         N: int,
         n_add: list,
-        designs: dict = {"docloo": DOCLOO}
+        designs: dict = {"docloo": DOCLOO},
+        n_jobs: int = -2
     ):
         self.noise = from_benchmarker.noise
         self.suffix = from_benchmarker.suffix
@@ -511,36 +593,30 @@ class DOptimizationBenchmarker(Benchmarker):
             self.conditions.items(), total=len(self.conditions),
             desc="generating simulated results with experimental designs"
         ):
-            [
-                m.simulate(
+            self.conditions[k] = Parallel(n_jobs=n_jobs)(
+                delayed(do_simulate)(
+                    simulator=m,
                     design=designs[k],
                     n_rep=N,
                     n_add=n_add[(i // seeds.size) % n_add.size],
                     random_state=seeds[i % seeds.size],
                     model_kwargs=self.noise.conf[i // (seeds.size * n_add.size)]
-                ) for i, m in tqdm(
-                    enumerate(models), total=len(models),
-                    desc=f"{k}-based simulators"
-                )
-            ]
+                ) for i, m in enumerate(models)
+            )
 
         self.theoretical = from_benchmarker.theoretical
-        self.ground_truth = [
-            self.theoretical[i // (seeds.size * n_add.size)].summary(dtype=int) for i in tqdm(
-                range(n_iter), total=n_iter,
-                desc="generating ground truth labels for each condition"
-            )
-        ]
+        self.ground_truth = Parallel(n_jobs=n_jobs)(
+            delayed(lambda te: te.summary(dtype=int))(
+                self.theoretical[i // (seeds.size * n_add.size)]
+            ) for i in range(n_iter)
+        )
 
         warnings.simplefilter('ignore')
 
         self.results = {
-            k: [
-                MLR(m).summary(anova=True, dtype=int) for m in tqdm(
-                    cond, total=len(cond),
-                    desc=f"{k}-based simulators"
-                )
-            ] for k, cond in tqdm(
+            k: Parallel(n_jobs=n_jobs)(
+                delayed(mlr_anova)(m) for m in cond
+            ) for k, cond in tqdm(
                 self.conditions.items(), total=len(self.conditions),
                 desc="encoding simulated results with MLR/AVOVA"
             )
@@ -549,32 +625,25 @@ class DOptimizationBenchmarker(Benchmarker):
         self.scores = pd.DataFrame({
             "err": np.ravel([[v] * n_add.size * seeds.size for v in self.noise.arr]),
             **{
-                f"{k}_nmax": [
-                    len(m.exmatrix) for m in tqdm(
-                        cond, total=n_iter,
-                        desc=f"{k}-based simulators"
-                    )
-                ] for k, cond in  tqdm(
+                f"{k}_nmax": Parallel(n_jobs=n_jobs)(
+                    delayed(lambda simulator: len(simulator.exmatrix))(m) for m in cond
+                ) for k, cond in  tqdm(
                     self.conditions.items(), total=len(self.conditions),
                     desc="calculating n_max values"
                 )
             },
             **{
-                f"{k}_metric": [
-                    self.metric.f(res, gt) for res, gt in tqdm(
-                        zip(results, self.ground_truth), total=len(self.ground_truth),
-                        desc=f"{k}-based simulators"
-                    )
-                ] for k, results in tqdm(
+                f"{k}_metric": Parallel(n_jobs=n_jobs)(
+                    delayed(self.metric.f)(res, gt) for res, gt in zip(results, self.ground_truth)
+                ) for k, results in tqdm(
                     self.results.items(), total=len(self.results),
                     desc="evaluating experimental design performance"
                 )
             },
             **{
-                f"{k}_d": np.fromiter(
-                    map(d_criterion, map(sm.add_constant, [m.exmatrix for m in cond])), 
-                    float
-                ) for k, cond in tqdm(
+                f"{k}_d": np.array(Parallel(n_jobs=n_jobs)(
+                    delayed(lambda simulator: d_criterion(sm.add_constant(simulator.exmatrix)))(m) for m in cond
+                )) for k, cond in tqdm(
                     self.conditions.items(), total=len(self.conditions), 
                     desc="evaluating D-criterion values"
                 )
@@ -602,22 +671,12 @@ class DOptimizationBenchmarker(Benchmarker):
         )
         
         self.power = pd.concat([
-            pd.concat([
-                pd.concat(
-                    [
-                        anova_power(m),
-                        pd.DataFrame({
-                            "d": self.scores[f"{k}_d"].values[i] * np.ones(n_factor),
-                            "nmax": self.scores[f"{k}_nmax"].values[i] * np.ones(n_factor),
-                            "noise": [self.noise.names[i // (self.metadata.n_rep * n_add.size)]] * n_factor
-                        })
-                    ],
-                    axis=1
-                ) for i, m in tqdm(
-                    enumerate(cond), total=n_iter,
-                    desc=f"{k}-based simulators"
-                )
-            ]) for k, cond in tqdm(
+            pd.concat(Parallel(n_jobs=n_jobs)(
+                delayed(power_pddf_formatter)(
+                    idx=i, simulator=m, key=k, n_factor=n_factor, noise_names=self.noise.names, 
+                    n_rep=self.metadata.n_rep, n_add=n_add
+                ) for i, m in enumerate(cond)
+            )) for k, cond in tqdm(
                 self.conditions.items(), total=len(self.conditions), 
                 desc="Power analysis"
             )
@@ -792,11 +851,12 @@ class DOptimizationBenchmarkingPipeline(BenchmarkingPipeline):
         from_pipeline: BenchmarkingPipeline,
         N: int,
         n_add: list,
-        designs: dict = {"docloo": DOCLOO}
+        designs: dict = {"docloo": DOCLOO},
+        n_jobs: int = -2
     ):
         self.configuration = {
             k: DOptimizationBenchmarker(
-                from_benchmarker=bm, N=N, n_add=n_add, designs=designs
+                from_benchmarker=bm, N=N, n_add=n_add, designs=designs, n_jobs=n_jobs
             ) for k, bm in tqdm(
                 from_pipeline.configuration.items(), total=len(from_pipeline.configuration),
                 desc="Running D-optimization pipeline"
