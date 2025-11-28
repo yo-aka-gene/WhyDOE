@@ -92,13 +92,12 @@ def bio_multicomp(
     test_kwargs: dict = {"alternative": "two-sided", "random_state": 0},
     text_kwargs: dict = {},
     cmap: list = None,
-    alpha: float = .7,
+    alpha: float = 1,
     const_color: tuple = plt.cm.gray(.2),
     ax: plt.Axes = None,
     xscales: np.ndarray = np.array([1.3, 1.8]),
-    jitter_ratio: float = .1,
-    errorbar: tuple = ("se", 2)
-    
+    jitter_ratio: float = .2,
+    display_pvals: bool = False
 ):
     assert issubclass(type(simulation), AbstractSimulator), \
         f"pass subclass of AbstractSimulator, got {simulation}[{type(simulation)}]"
@@ -121,29 +120,31 @@ def bio_multicomp(
         control=df[df.group == "all factors"].y,
         **test_kwargs
     ).pvalue
-    
-    bar_label = "mean$\pm$"
-    bar_label += f"{errorbar[1]}{'%' if errorbar[0] == 'ci' else ''}{errorbar[0].upper()}"
 
-    sns.barplot(
+    sns.stripplot(
         y=["all factors" if i == 0 else f"X{i} KD" for i in range(nrows)] * simulation.metadata['n_rep'], 
-        x=simulation.exresult, capsize=.3, err_kws={'linewidth': 1}, 
+        x=simulation.exresult, s=5, 
+        hue=([const_color] + cmap) * simulation.metadata['n_rep'],
         palette=[const_color] + cmap, 
-        hue=["all factors" if i == 0 else f"X{i} KD" for i in range(nrows)] * simulation.metadata['n_rep'], 
         legend=False,
-        alpha=.4, edgecolor=".2", label=bar_label,
-        errorbar=errorbar, ax=ax
+        alpha=1, ax=ax,
+        # linewidth=.5, edgecolor=".2",
+        jitter=.2
     )
-
-    sns.scatterplot(
-        y=["all factors" if i == 0 else f"X{i} KD" for i in range(nrows)] * simulation.metadata['n_rep'], 
-        x=simulation.exresult, s=15, color = ([const_color] + cmap) * simulation.metadata['n_rep'],
-        legend=False,
-        alpha=1, linewidth=.5, edgecolor=".2", ax=ax
-    )
+    
+    means = simulation.exresult.reshape(-1, nrows).T.mean(axis=1)
+    sds = simulation.exresult.reshape(-1, nrows).T.std(axis=1)
 
     xm, xM = ax.get_xlim()
     jitter = jitter_ratio * (xM - xm)
+    
+    yrange = (lambda v1, v2: v2 - v1)(*np.sort(np.array(ax.get_ylim())))
+    
+    for i, m, sd, c in zip(range(nrows), means, sds, [const_color] + cmap):
+        ax.vlines(m - sd, i - (yrange * .03), i + (yrange * .03), color=c)
+        ax.vlines(m + sd, i - (yrange * .03), i + (yrange * .03), color=c)
+        ax.vlines(m, i - (yrange * .02), i + (yrange * .02), color=c)
+        ax.hlines(i, m - sd, m + sd, color=c)
     
     default_text_kwargs = dict(color=".2", size=6, ha="center", va="center")
 
@@ -151,7 +152,8 @@ def bio_multicomp(
         c = select(df[df.group == name].y)
         p = pvals[i]
         ax.text(
-            sign(c) * (abs(c) + jitter), i + 1, asterisk(p) + p_format(p), 
+            sign(c) * (abs(c) + jitter), i + 1, 
+            asterisk(p) + p_format(p) if display_pvals else asterisk(p), 
             **{**default_text_kwargs, **text_kwargs}
         )
 
