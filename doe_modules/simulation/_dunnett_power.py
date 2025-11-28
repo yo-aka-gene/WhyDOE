@@ -1,33 +1,42 @@
-import os
-import subprocess
-from tempfile import TemporaryDirectory
-import yaml
-
 import numpy as np
 import pandas as pd
-import polars as pl
+import rpy2.robjects as ro
+import rpy2.robjects.vectors as ro_vectors
+from rpy2.robjects.packages import importr, isinstalled
+from rpy2.robjects import numpy2ri
 
 from ._abstract import AbstractSimulator
 from ._dunnett import Dunnett
 from ._anova_power import sigma2
 
 
-def mvtnorm_wrapper(
-    arr_m_t: np.ndarray, 
-    baseline: float, 
-    n_rep: int, 
-    sigma: float, 
-    alpha: float
-):
-    tempdir = TemporaryDirectory()
-    pl.from_numpy(arr_m_t).write_ipc(f"{tempdir.name}/arr.feather")
-    cmd = f"Rscript {os.path.dirname(__file__)}/dunnett_power.R -t {tempdir.name} -m {baseline} -n {n_rep} -s {sigma} -a {alpha}"
-    subprocess.call(cmd.split())
-    # ret = pl.read_ipc(f"{tempdir.name}/power.feather", memory_map=False).to_numpy()
-    with open(f"{tempdir.name}/power.yaml") as f:
-        ret = yaml.safe_load(f)
-    tempdir.cleanup()
-    return ret
+numpy2ri.activate()
+
+utils = importr('utils')
+base = importr('base')
+packages = ["mvtnorm", "stats"]
+repos = "https://cloud.r-project.org/"
+rscript = f"{os.path.dirname(__file__)}/dunnett_power.R"
+func_name = "dunnett_power_analytic"
+R_FUNC = None
+
+
+for pkg in packages:
+    if not isinstalled(pkg): 
+        utils.install_packages(pkg, repos=repos)
+    base.suppressPackageStartupMessages(
+        base.library(pkg, character_only=ro_vectors.BoolVector([True]))
+    )
+
+
+with open(rscript) as f:
+    ro.r(f.read())
+
+
+def _initialize_r_func():
+    global R_FUNC
+    if R_FUNC is None:
+        R_FUNC = ro.r[func_name]
 
 
 def dunnett_power(
@@ -40,13 +49,20 @@ def dunnett_power(
     dunnett_model = Dunnett(simulation)
     if dunnett_model.n_rep > 1:
         dunnett_model.summary()
-        power_dict = mvtnorm_wrapper(
-            arr_m_t=dunnett_model.coef.y.values,
-            baseline=dunnett_model.baseline.y,
-            n_rep=dunnett_model.n_rep,
-            sigma=np.sqrt(sigma2(dunnett_model.simulation).item()),
-            alpha=alpha
+        _initialize_r_func()
+        power_dict = (
+            lambda listvector: dict(zip(listvector.names, listvector))
+        )(
+            R_FUNC(
+                mu0=float(dunnett_model.baseline.y),
+                mu_t=dunnett_model.coef.y.values.ravel(),
+                n0=dunnett_model.n_rep,
+                nt=dunnett_model.n_rep,
+                sigma=np.sqrt(sigma2(dunnett_model.simulation).item()),
+                alpha=alpha
+            )
         )
+
     else:
         power_dict =  {
             "df": np.nan,

@@ -3,52 +3,14 @@
 
 options(warn = -1)
 
-packages <- c("optparse", "arrow", "mvtnorm", "stats", "yaml")
+# packages <- c("mvtnorm", "stats")
 
-for (pkg in packages) {
-  if (!requireNamespace(pkg, quietly = TRUE)) {
-    install.packages(pkg, repos="https://cloud.r-project.org/")
-  }
-  suppressPackageStartupMessages(library(pkg, character.only = TRUE))
-}
-
-optslist <- list(
-  make_option(
-    c("-t", "--tempdir"),
-    type = "character",
-    default = "/home/jovyan/out",
-    help = "temporary directory to save intermediate files"
-  ),
-  make_option(
-    c("-m", "--m0"),
-    type = "double",
-    help = "mean of the control group"
-  ),
-  make_option(
-    c("-n", "--n_rep"),
-    type = "integer",
-    help = "number of replication"
-  ),
-  make_option(
-    c("-s", "--sigma"),
-    type = "double",
-    help = "estimated sd (shared)"
-  ),
-  make_option(
-    c("-a", "--alpha"),
-    type = "double",
-    help = "alpha"
-  )
-)
-parser <- OptionParser(option_list = optslist)
-opts <- parse_args(parser)
-
-m0 <- opts$m0
-m_i <- read_feather(paste0(opts$tempdir, "/arr.feather"), mmap = FALSE)$column_0
-n_rep <- opts$n_rep
-sigma <- opts$sigma
-alpha <- opts$alpha
-
+# for (pkg in packages) {
+#   if (!requireNamespace(pkg, quietly = TRUE)) {
+#     install.packages(pkg, repos="https://cloud.r-project.org/")
+#   }
+#   suppressPackageStartupMessages(library(pkg, character.only = TRUE))
+# }
 
 dunnett_power_analytic <- function(
   mu0, mu_t, n0, nt, sigma, alpha
@@ -56,7 +18,7 @@ dunnett_power_analytic <- function(
   k  <- length(mu_t)
   ni <- rep(nt, k)
   se <- sqrt(1/n0 + 1/ni) * sigma
-  ncp <- (mu_t - mu0)/se
+  ncp <- as.numeric((mu_t - mu0)/se)
 
   #  df = N_total - G,  G = k + 1
   df  <- n0 + sum(ni) - (k + 1)
@@ -90,19 +52,5 @@ dunnett_power_analytic <- function(
     familywise_power = fw_power
   )
 }
-
-power <- dunnett_power_analytic(
-    mu0 = m0, mu_t = m_i, n0 = n_rep, nt = n_rep, sigma = sigma, alpha = alpha
-)
-
-# write_feather(
-#   power,
-#   paste0(opts$tempdir, "/power.feather")
-# )
-
-write_yaml(
-  power,
-  paste0(opts$tempdir, "/power.yaml")
-)
 
 options(warn = 0)
