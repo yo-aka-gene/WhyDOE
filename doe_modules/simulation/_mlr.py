@@ -48,7 +48,8 @@ class MLR:
         anova: bool = False,
         anova_type: int = 2,
         jitter_ratio: float = .1,
-        regex: str = None
+        regex: str = None,
+        display_pvals: bool = False
     ):
         params, pvals = self._overwrite_with_anova(
             show_const=show_const,
@@ -93,7 +94,8 @@ class MLR:
 
         for i, c, p in zip(df.index, df.coef, df.p):
             ax.text(
-                sign(c) * (abs(c) + jitter), i, asterisk(p) + p_format(p), 
+                sign(c) * (abs(c) + jitter), i, 
+                asterisk(p) + p_format(p) if display_pvals else asterisk(p), 
                 color=".2", size=7,
                 ha="center", va="center"
             )
