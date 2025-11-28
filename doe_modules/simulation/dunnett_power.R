@@ -12,23 +12,21 @@ options(warn = -1)
 #   suppressPackageStartupMessages(library(pkg, character.only = TRUE))
 # }
 
-dunnett_power_analytic <- function(
-  mu0, mu_t, n0, nt, sigma, alpha
-){
+dunnett_power_analytic <- function(mu0, mu_t, n0, nt, sigma, alpha) {
   k  <- length(mu_t)
   ni <- rep(nt, k)
-  se <- sqrt(1/n0 + 1/ni) * sigma
-  ncp <- as.numeric((mu_t - mu0)/se)
+  se <- sqrt(1 / n0 + 1 / ni) * sigma
+  ncp <- as.numeric((mu_t - mu0) / se)
 
   #  df = N_total - G,  G = k + 1
   df  <- n0 + sum(ni) - (k + 1)
 
-  # corr((Ti-C),(Tj-C)) = (1/n0) / sqrt((1/ni + 1/n0)(1/nj + 1/n0))
+  # corr((Ti-C),(Tj-C)) = (1 / n0) / sqrt((1 / ni + 1 / n0)(1 / nj + 1 / n0))
   R <- diag(k)
   for(i in 1:k){
     for(j in 1:k){
       if(i != j){
-        R[i,j] <- (1/n0) / sqrt((1/ni[i] + 1/n0)*(1/ni[j] + 1/n0))
+        R[i,j] <- (1 / n0) / sqrt((1 / ni[i] + 1 / n0) * (1 / ni[j] + 1 / n0))
       }
     }
   }
