@@ -1,24 +1,43 @@
 import os
-import subprocess
-from tempfile import TemporaryDirectory
 
 import numpy as np
 import pandas as pd
-import polars as pl
+import rpy2.robjects as ro
+import rpy2.robjects.vectors as ro_vectors
+from rpy2.robjects.packages import importr, isinstalled
+from rpy2.robjects import numpy2ri
 
 from ._abstract import DesignMatrix, DOE
 from ._fullfact import FullFactorial
 
 
-def algdesign_wrapper(arr: np.ndarray, candidate: np.ndarray, n_add: int) -> np.ndarray:
-    tempdir = TemporaryDirectory()
-    pl.from_numpy(arr).write_ipc(f"{tempdir.name}/arr.feather")
-    pl.from_numpy(candidate).write_ipc(f"{tempdir.name}/candidate.feather")
-    cmd = f"Rscript {os.path.dirname(__file__)}/d_optimization.R -t {tempdir.name} -a {n_add}"
-    subprocess.call(cmd.split())
-    ret = pl.read_ipc(f"{tempdir.name}/opt.feather", memory_map=False).to_numpy()
-    tempdir.cleanup()
-    return ret
+numpy2ri.activate()
+
+utils = importr('utils')
+base = importr('base')
+packages = ["AlgDesign"]
+repos = "https://cloud.r-project.org/"
+rscript = f"{os.path.dirname(__file__)}/d_optimization.R"
+func_name = "d_optimize_core"
+R_FUNC = None
+
+
+for pkg in packages:
+    if not isinstalled(pkg): 
+        utils.install_packages(pkg, repos=repos)
+    base.suppressPackageStartupMessages(
+        base.library(pkg, character_only=ro_vectors.BoolVector([True]))
+    )
+
+
+with open(rscript) as f:
+    ro.r(f.read())
+
+
+def _initialize_r_func():
+    global R_FUNC
+    if R_FUNC is None:
+        R_FUNC = ro.r[func_name]
 
 
 def d_optimize(
@@ -35,10 +54,14 @@ def d_optimize(
 
     n_factor = dsmatrix.shape[1]
 
-    return algdesign_wrapper(
-        arr=dsmatrix.values,
-        candidate=FullFactorial().get_exmatrix(n_factor).values,
-        n_add=n_add
+    _initialize_r_func()
+
+    return np.asarray(
+        R_FUNC(
+            dsmatrix=dsmatrix.values,
+            candidate=FullFactorial().get_exmatrix(n_factor).values,
+            n_add=n_add
+        )
     )
 
 
