@@ -85,7 +85,7 @@ class MLR:
         sns.barplot(
             data=df, y="index", x="coef", 
             palette=[const_color] + list(cmap) if show_const else cmap, 
-            ax=ax
+            ax=ax, hue="index", legend=False
         )
         
         xm, xM = ax.get_xlim()
