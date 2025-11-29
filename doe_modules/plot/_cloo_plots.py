@@ -141,10 +141,10 @@ def bio_multicomp(
     yrange = (lambda v1, v2: v2 - v1)(*np.sort(np.array(ax.get_ylim())))
     
     for i, m, sd, c in zip(range(nrows), means, sds, [const_color] + cmap):
-        ax.vlines(m - sd, i - (yrange * .03), i + (yrange * .03), color=c)
-        ax.vlines(m + sd, i - (yrange * .03), i + (yrange * .03), color=c)
-        ax.vlines(m, i - (yrange * .02), i + (yrange * .02), color=c)
-        ax.hlines(i, m - sd, m + sd, color=c)
+        ax.vlines(m - sd, i - (yrange * .03), i + (yrange * .03), color=c, linewidth=1.5)
+        ax.vlines(m + sd, i - (yrange * .03), i + (yrange * .03), color=c, linewidth=1.5)
+        ax.vlines(m, i - (yrange * .02), i + (yrange * .02), color=c, linewidth=1.5)
+        ax.hlines(i, m - sd, m + sd, color=c, linewidth=1.5)
     
     default_text_kwargs = dict(color=".2", size=6, ha="center", va="center")
 
