@@ -1,10 +1,17 @@
+import matplotlib as mpl
+import numpy as np
+
 from . import cmap
 from . import pvalues
 from ._harmonic_mean import harmonic_mean
 from ._subplots import subplots
 from ._textcolor import rgba2gray, textcolor
 
-import numpy as np
+
+mpl.rcParams.update({
+    "pdf.fonttype": 42,
+    "ps.fonttype": 42,
+})
 
 
 kwarg_savefig = {
