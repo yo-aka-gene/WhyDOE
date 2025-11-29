@@ -539,7 +539,8 @@ def do_simulate(
 def power_pddf_formatter(
     idx: int, 
     simulator: AbstractSimulator,
-    key: str,
+    d: np.ndarray,
+    nmax: np.ndarray,
     n_factor: int,
     noise_names: list,
     n_rep: int,
@@ -549,13 +550,26 @@ def power_pddf_formatter(
         [
             anova_power(simulator),
             pd.DataFrame({
-                "d": self.scores[f"{key}_d"].values[idx] * np.ones(n_factor),
-                "nmax": self.scores[f"{key}_nmax"].values[idx] * np.ones(n_factor),
+                "d": d[idx] * np.ones(n_factor),
+                "nmax": nmax[idx] * np.ones(n_factor),
                 "noise": [noise_names[idx // (n_rep * n_add.size)]] * n_factor
             })
         ],
         axis=1
     )
+        
+        
+        
+    #     [
+    #         anova_power(simulator),
+    #         pd.DataFrame({
+    #             "d": self.scores[f"{key}_d"].values[idx] * np.ones(n_factor),
+    #             "nmax": self.scores[f"{key}_nmax"].values[idx] * np.ones(n_factor),
+    #             "noise": [noise_names[idx // (n_rep * n_add.size)]] * n_factor
+    #         })
+    #     ],
+    #     axis=1
+    # )
 
 
 
@@ -669,11 +683,14 @@ class DOptimizationBenchmarker(Benchmarker):
             ],
             axis=1
         )
-        
+
+ 
         self.power = pd.concat([
             pd.concat(Parallel(n_jobs=n_jobs)(
                 delayed(power_pddf_formatter)(
-                    idx=i, simulator=m, key=k, n_factor=n_factor, noise_names=self.noise.names, 
+                    idx=i, simulator=m, d=self.scores[f"{k}_d"].values,
+                    nmax=self.scores[f"{k}_nmax"].values,
+                    n_factor=n_factor, noise_names=self.noise.names, 
                     n_rep=self.metadata.n_rep, n_add=n_add
                 ) for i, m in enumerate(cond)
             )) for k, cond in tqdm(
