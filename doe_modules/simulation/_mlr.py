@@ -44,7 +44,7 @@ class MLR:
         show_interactions: bool = True,
         order: int = np.inf,
         const_color: tuple = plt.cm.gray(.7),
-        xscales: np.ndarray = np.array([1.3, 1.8]),
+        xscales: np.ndarray = np.array([1.1, 1.1]),
         anova: bool = False,
         anova_type: int = 2,
         jitter_ratio: float = .1,
@@ -78,16 +78,26 @@ class MLR:
             params, columns=["coef"]
         ).assign(
             p=pvals
+        ).assign(
+            neglog10=-np.log2(pvals.fillna(np.finfo(float).eps))
         ).loc[displayed_factors, :].reset_index()
 
         ax = plt.subplots()[-1] if ax is None else ax
         cmap = self.cmap if cmap is None else cmap
-
-        sns.barplot(
-            data=df, y="index", x="coef", 
+        
+        sns.scatterplot(
+            data=df, y="index", x="coef",
             palette=[const_color] + list(cmap) if show_const else cmap, 
-            ax=ax, hue="index", legend=False
+            ax=ax, hue="index", legend=False, size="neglog10"
         )
+        
+        for (i, x), c in zip(enumerate(params), cmap):
+            ax.hlines(i, 0, x, color=c)
+        
+        ax.set_xlim([-1, 1])
+        ylim = ax.get_ylim()
+        ax.vlines(0, *ylim, color=".2", linewidth=.5, zorder=-300)
+        ax.set_ylim(*ylim)
         
         xm, xM = ax.get_xlim()
         jitter = jitter_ratio * (xM - xm)
@@ -102,7 +112,7 @@ class MLR:
 
         ax.set_xlim(xscales * np.array([*ax.get_xlim()]))
         ax.set(
-            xlabel="Coefficient", 
+            xlabel="Coefficient" if not anova else r"sign$(\hat{\beta})\eta_p^2$", 
             ylabel="", 
             title=f"N={self.metadata['n_rep']}"
         )
@@ -151,15 +161,28 @@ class MLR:
         regex: str = None,
     ) -> (pd.Series, pd.Series):
         if anova:
-            params = self.result.params.drop("Intercept")
+            coef = self.result.params.drop("Intercept")
             try:
-                pvals = sm.stats.anova_lm(
+                anova_res = sm.stats.anova_lm(
                     self.result, typ=anova_type
-                ).loc[:, "PR(>F)"].drop("Residual")
+                )
+                ss_e = anova_res.loc["Residual", "sum_sq"]
+                pvals = anova_res.loc[:, "PR(>F)"].drop("Residual")
+                
+                eta_sq = lambda df_anova: df_anova.sum_sq / (df_anova.sum_sq + ss_e)
+                
+                params = anova_res.drop("Residual").assign(
+                    coef=eta_sq(anova_res.drop("Residual")) * np.sign(coef)
+                )["coef"]
+
             except ValueError:
                 pvals = pd.Series(
-                    [np.nan] * params.size,
-                    index = params.index
+                    [np.nan] * coef.size,
+                    index = coef.index
+                )
+                params = pd.Series(
+                    [0] * coef.size,
+                    index = coef.index
                 )
         else:
             params = self.result.params
