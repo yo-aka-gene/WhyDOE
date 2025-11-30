@@ -28,10 +28,12 @@ heatmap_pref = dict(
     vmax=1, vmin=0, 
     cbar_kws={"label": r"$|\rho|$"},
     cmap="coolwarm", square=True,
+    rasterized=True
 )
 
 dsmat_pref = dict(
-    cmap="Purples", square=True
+    cmap="Purples", square=True, 
+    rasterized=True
 )
 
 
