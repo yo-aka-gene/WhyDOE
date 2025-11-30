@@ -371,7 +371,8 @@ class Benchmarker:
                     loc="center left", 
                     bbox_to_anchor=(1, .5),
                     fontsize="small", 
-                    title=self.metadata.model_id
+                    title=self.metadata.model_id, 
+                    frameon=False
                 ) if i == self.noise.size - 1 else a.legend().remove()
         else:
             fig, ax = plt.subplots(figsize=(unit_x_length, unit_y_length))
@@ -386,7 +387,7 @@ class Benchmarker:
                 )
             ax.set_ylim(-0.05, 1.05)
             ax.set(title=self.metadata.model_id, xlabel="N: Num. of replication", ylabel=self.metric.name)
-            ax.legend(loc="upper left", fontsize="x-small")
+            ax.legend(loc="upper left", fontsize="x-small", frameon=False)
             ax.set_xticks(self.metadata.n_range.tolist())
             ax.set_yticks(np.linspace(0, 1, 6).tolist())
         
@@ -434,7 +435,8 @@ class Benchmarker:
             a.legend(
                 loc="center left", 
                 bbox_to_anchor=bbox_to_anchor,
-                title=self.metadata.model_id
+                title=self.metadata.model_id, 
+                frameon=False
             ) if i == (1 + center) * self.noise.size - 1 else a.legend().remove()
         
         return fig, ax
@@ -505,6 +507,7 @@ class BenchmarkingPipeline:
             "plot_benchmarking": "benchmarks", 
             "plot_power": "power"
         },
+        extension: str = "",
         kwarg_save: dict = kwarg_savefig
     ):
         for f in tqdm(func, total=len(func), desc="Plotting"):
@@ -514,7 +517,7 @@ class BenchmarkingPipeline:
             ):
                 fig, ax = eval(f"bm.{f}")(**kwargs[f])
                 if savefig:
-                    fig.savefig(f"{where}/{titles[f]}{bm.suffix}", **kwarg_save)
+                    fig.savefig(f"{where}/{titles[f]}{bm.suffix}{extension}", **kwarg_save)
                 self.outputs[k][f] = (fig, ax)
 
 
@@ -557,20 +560,6 @@ def power_pddf_formatter(
         ],
         axis=1
     )
-        
-        
-        
-    #     [
-    #         anova_power(simulator),
-    #         pd.DataFrame({
-    #             "d": self.scores[f"{key}_d"].values[idx] * np.ones(n_factor),
-    #             "nmax": self.scores[f"{key}_nmax"].values[idx] * np.ones(n_factor),
-    #             "noise": [noise_names[idx // (n_rep * n_add.size)]] * n_factor
-    #         })
-    #     ],
-    #     axis=1
-    # )
-
 
 
 class DOptimizationBenchmarker(Benchmarker):
@@ -768,7 +757,8 @@ class DOptimizationBenchmarker(Benchmarker):
                     loc="center left", 
                     bbox_to_anchor=(1, .5),
                     fontsize="small",
-                    title=self.metadata.model_id
+                    title=self.metadata.model_id, 
+                    frameon=False
                 ) if i == self.noise.size - 1 else a.legend().remove()
                 
                 for k in items:
@@ -802,7 +792,7 @@ class DOptimizationBenchmarker(Benchmarker):
             ax.set_yticks(np.linspace(0, 1, 6).tolist())
             ax.set(title=self.metadata.model_id, xlabel="D-criterion values", ylabel=self.metric.name)
             ax.set_xscale("log")
-            ax.legend(loc="upper right", fontsize="x-small")
+            ax.legend(loc="upper right", fontsize="x-small", frameon=False)
 
             for k in items:
                 df_group = self.scores[self.scores.err == noise].groupby(f"{k}_nmax").mean()
@@ -856,7 +846,8 @@ class DOptimizationBenchmarker(Benchmarker):
             a.legend(
                 loc="center left",
                 bbox_to_anchor=bbox_to_anchor,
-                title=self.metadata.model_id
+                title=self.metadata.model_id, 
+                frameon=False
             ) if i == (1 + center) * self.noise.size - 1 else a.legend().remove()
         
         return fig, ax
@@ -898,6 +889,7 @@ class DOptimizationBenchmarkingPipeline(BenchmarkingPipeline):
             "plot_benchmarking": "benchmarks_with_do", 
             "plot_power": "power_doptim"
         },
+        extension: str = "",
         kwarg_save: dict = kwarg_savefig
     ):
         for f in tqdm(func, total=len(func), desc="Plotting"):
@@ -907,5 +899,5 @@ class DOptimizationBenchmarkingPipeline(BenchmarkingPipeline):
             ):
                 fig, ax = eval(f"bm.{f}")(**kwargs[f])
                 if savefig:
-                    fig.savefig(f"{where}/{titles[f]}{bm.suffix}", **kwarg_save)
+                    fig.savefig(f"{where}/{titles[f]}{bm.suffix}{extension}", **kwarg_save)
                 self.outputs[k][f] = (fig, ax)
