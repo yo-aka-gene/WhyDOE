@@ -50,7 +50,7 @@ def d_optimize(
         assert n_total >= dsmatrix.shape[0], \
             f"Invalid n_total value: n_total={n_total} should be an integer larger than the original number of trials (>={dsmatrix.shape[0]})"
         n_add = n_total - dsmatrix.shape[0]
-    assert isinstance(n_add, (int, np.int, np.int64)) and n_add >= 0, \
+    assert isinstance(n_add, (int, np.int64)) and n_add >= 0, \
         f"Invalid n_add value: n_add={n_add} should be an integer >=0"
 
     n_factor = dsmatrix.shape[1]

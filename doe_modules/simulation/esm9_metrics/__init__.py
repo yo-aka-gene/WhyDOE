@@ -300,7 +300,8 @@ def n_eff(arr):
 
 
 def n_effpos(arr):
-    return ((arr[9:] == 1) & is_effective(arr)).sum()
+    n_factor = int((np.sqrt(1 + 8 * arr.size) - 1) / 2)
+    return ((arr[n_factor:] == 1) & is_effective(arr)).sum()
 
 
 def effective_edge_positivity(arr):

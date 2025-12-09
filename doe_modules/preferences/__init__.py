@@ -22,6 +22,13 @@ kwarg_savefig = {
     "transparent": True,
 }
 
+kwarg_save_transparent_fig = {
+    "dpi": 600,
+    "bbox_inches": "tight",
+    "pad_inches": 0.05,
+    "transparent": True,
+}
+
 outputdir = "/home/jovyan/out"
 
 heatmap_pref = dict(
@@ -71,6 +78,7 @@ def fmt_suffix(suffix: str) -> str:
 
 __all__ = [
     kwarg_savefig,
+    kwarg_save_transparent_fig,
     outputdir,
     heatmap_pref,
     dsmat_pref,

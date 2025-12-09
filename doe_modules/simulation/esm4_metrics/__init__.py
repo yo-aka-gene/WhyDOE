@@ -120,6 +120,7 @@ def effective_edge_negativity(arr):
     n_e = n_eff(arr)
     return n_effneg(arr) / n_e if n_e != 0 else 0
 
+
 def edge_loading(arr):
     return np.abs(arr)[:4] * np.array([
         0,
@@ -331,69 +332,69 @@ def mean_synergetic_cascade_length_ratio(arr):
     return synergetic_cascade_length(arr).sum() / theoretical
 
 
-def cascade_coverage(arr):
-    return np.sum([
-        (arr[(0),] != 0).all(),
-        (arr[(4, 1),] != 0).all(),
-        (arr[(4, 7, 2),] != 0).all(),
-        (arr[(4, 7, 9, 3),] != 0).all(),
-        (arr[(4, 8, 3),] != 0).all(),
-        (arr[(5, 2),] != 0).all(),
-        (arr[(5, 9, 3),] != 0).all(),
-        (arr[(6, 3),] != 0).all(),
-        (arr[(1),] != 0).all(),
-        (arr[(7, 2),] != 0).all(),
-        (arr[(7, 9, 3),] != 0).all(),
-        (arr[(8, 3),] != 0).all(),
-        (arr[(2),] != 0).all(),
-        (arr[(9, 3),] != 0).all(),
-        (arr[(3),] != 0).all(),
-    ]) / (2 ** arr[:4].size - 1)
+# def cascade_coverage(arr):
+#     return np.sum([
+#         (arr[(0),] != 0).all(),
+#         (arr[(4, 1),] != 0).all(),
+#         (arr[(4, 7, 2),] != 0).all(),
+#         (arr[(4, 7, 9, 3),] != 0).all(),
+#         (arr[(4, 8, 3),] != 0).all(),
+#         (arr[(5, 2),] != 0).all(),
+#         (arr[(5, 9, 3),] != 0).all(),
+#         (arr[(6, 3),] != 0).all(),
+#         (arr[(1),] != 0).all(),
+#         (arr[(7, 2),] != 0).all(),
+#         (arr[(7, 9, 3),] != 0).all(),
+#         (arr[(8, 3),] != 0).all(),
+#         (arr[(2),] != 0).all(),
+#         (arr[(9, 3),] != 0).all(),
+#         (arr[(3),] != 0).all(),
+#     ]) / (2 ** arr[:4].size - 1)
 
 
-def positive_cascade_coverage(arr):
-    return np.sum([
-        (arr[(0),] == 1).all(),
-        (arr[(4, 1),] == 1).all(),
-        (arr[(4, 7, 2),] == 1).all(),
-        (arr[(4, 7, 9, 3),] == 1).all(),
-        (arr[(4, 8, 3),] == 1).all(),
-        (arr[(5, 2),] == 1).all(),
-        (arr[(5, 9, 3),] == 1).all(),
-        (arr[(6, 3),] == 1).all(),
-        (arr[(1),] == 1).all(),
-        (arr[(7, 2),] == 1).all(),
-        (arr[(7, 9, 3),] == 1).all(),
-        (arr[(8, 3),] == 1).all(),
-        (arr[(2),] == 1).all(),
-        (arr[(9, 3),] == 1).all(),
-        (arr[(3),] == 1).all(),
-    ]) / (2 ** arr[:4].size - 1)
+# def positive_cascade_coverage(arr):
+#     return np.sum([
+#         (arr[(0),] == 1).all(),
+#         (arr[(4, 1),] == 1).all(),
+#         (arr[(4, 7, 2),] == 1).all(),
+#         (arr[(4, 7, 9, 3),] == 1).all(),
+#         (arr[(4, 8, 3),] == 1).all(),
+#         (arr[(5, 2),] == 1).all(),
+#         (arr[(5, 9, 3),] == 1).all(),
+#         (arr[(6, 3),] == 1).all(),
+#         (arr[(1),] == 1).all(),
+#         (arr[(7, 2),] == 1).all(),
+#         (arr[(7, 9, 3),] == 1).all(),
+#         (arr[(8, 3),] == 1).all(),
+#         (arr[(2),] == 1).all(),
+#         (arr[(9, 3),] == 1).all(),
+#         (arr[(3),] == 1).all(),
+#     ]) / (2 ** arr[:4].size - 1)
 
 
-def synergetic_cascade_coverage(arr):
-    return np.sum([
-        (arr[(0),] != 0).all(),
-        (arr[(4),] == 1).all() & (arr[1] != 0),
-        (arr[(4, 7),] == 1).all() & (arr[2] != 0),
-        (arr[(4, 7, 9),] == 1).all() & (arr[3] != 0),
-        (arr[(4, 8),] == 1).all() & (arr[3] != 0),
-        (arr[(5),] == 1).all() & (arr[2] != 0),
-        (arr[(5, 9),] == 1).all() & (arr[3] != 0),
-        (arr[(6),] == 1).all() & (arr[3] != 0),
-        (arr[(1),] != 0).all(),
-        (arr[(7),] == 1).all() & (arr[2] != 0),
-        (arr[(7, 9),] == 1).all() & (arr[3] != 0),
-        (arr[(8),] == 1).all() & (arr[3] != 0),
-        (arr[(2),] != 0).all(),
-        (arr[(9),] == 1).all() & (arr[3] != 0),
-        (arr[(3),] != 0).all(),
-    ]) / (2 ** arr[:4].size - 1)
+# def synergetic_cascade_coverage(arr):
+#     return np.sum([
+#         (arr[(0),] != 0).all(),
+#         (arr[(4),] == 1).all() & (arr[1] != 0),
+#         (arr[(4, 7),] == 1).all() & (arr[2] != 0),
+#         (arr[(4, 7, 9),] == 1).all() & (arr[3] != 0),
+#         (arr[(4, 8),] == 1).all() & (arr[3] != 0),
+#         (arr[(5),] == 1).all() & (arr[2] != 0),
+#         (arr[(5, 9),] == 1).all() & (arr[3] != 0),
+#         (arr[(6),] == 1).all() & (arr[3] != 0),
+#         (arr[(1),] != 0).all(),
+#         (arr[(7),] == 1).all() & (arr[2] != 0),
+#         (arr[(7, 9),] == 1).all() & (arr[3] != 0),
+#         (arr[(8),] == 1).all() & (arr[3] != 0),
+#         (arr[(2),] != 0).all(),
+#         (arr[(9),] == 1).all() & (arr[3] != 0),
+#         (arr[(3),] != 0).all(),
+#     ]) / (2 ** arr[:4].size - 1)
 
 
-def cai(arr) -> float:
-    return harmonic_mean(
-        edge_coverage(arr),
-        sparse_pathway_coverage(arr),
-        max_positive_edge_density(arr)
-    )
+# def cai(arr) -> float:
+#     return harmonic_mean(
+#         edge_coverage(arr),
+#         sparse_pathway_coverage(arr),
+#         max_positive_edge_density(arr)
+#     )
