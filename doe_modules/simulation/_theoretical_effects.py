@@ -28,6 +28,7 @@ class TheoreticalEffects:
         #     f"Simluation is not excecuted yet. Run simulation() before passing it to TheoreticalEffects.__init__"
         np.random.seed(random_state)
         seeds = np.random.randint(0, 2**32, n_rep)
+        mu = []
         effects = []
         order = min(order, simulation.n_factor)
         for s in seeds:
@@ -37,6 +38,7 @@ class TheoreticalEffects:
             )
             mat = simulation.exmatrix.values
             y = simulation.exresult
+            mu += [y.mean()]
             effects += [(mat[:, idx] * y).mean() for idx in np.arange(simulation.n_factor)]
 
             if interactions:
@@ -50,6 +52,7 @@ class TheoreticalEffects:
             f"FullFactorial().get_exmatrix(simulation.n_factor){'.interactions(order)' if interactions else '()'}"
         )
 
+        self.mu = np.array(mu)
         self.result = pd.DataFrame({
             "Coefficient": effects,
             "term": term_names.columns.tolist() * n_rep
