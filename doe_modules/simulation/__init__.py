@@ -17,6 +17,7 @@ from ._random_grn import random_grn_generator
 from . import esm_metrics
 from . import esm4_metrics
 from . import esm9_metrics
+from . import preset_edge_arr
 
 
 __all__ = [
